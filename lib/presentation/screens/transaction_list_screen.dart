@@ -49,14 +49,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         ),
         const SizedBox(height: 16),
         if (widget.income == null)
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'All', label: Text('All')),
-              ButtonSegment(value: 'Income', label: Text('Income')),
-              ButtonSegment(value: 'Expense', label: Text('Expense')),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final value in ['All', 'Income', 'Expense'])
+                ChoiceChip(
+                  label: Text(value),
+                  selected: filter == value,
+                  onSelected: (_) => setState(() => filter = value),
+                ),
             ],
-            selected: {filter},
-            onSelectionChanged: (v) => setState(() => filter = v.first),
           ),
         if (widget.income != null)
           FilledButton.icon(

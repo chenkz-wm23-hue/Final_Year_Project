@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../state/expense_store.dart';
 import '../widgets/app_card.dart';
 import '../widgets/month_selector.dart';
+import '../widgets/category_summary.dart';
+import '../widgets/async_button.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -14,9 +16,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
   Future<void> editBudget(ExpenseStore store) async {
     var amount = store.budget.toStringAsFixed(2);
     final form = GlobalKey<FormState>();
-    final value = await showDialog<double>(
+    await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         title: Text('Budget · ${store.monthLabel}'),
         content: Form(
           key: form,
@@ -42,25 +45,25 @@ class _BudgetScreenState extends State<BudgetScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          FilledButton(
-            onPressed: () {
+          AsyncButton(
+            label: 'Save',
+            onPressed: () async {
               if (form.currentState!.validate()) {
-                Navigator.pop(context, double.parse(amount));
+                await store.setBudget(double.parse(amount));
+                if (context.mounted) Navigator.pop(context);
               }
             },
-            child: const Text('Save'),
           ),
         ],
       ),
     );
-    if (value != null && mounted) store.setBudget(value);
   }
 
   @override
   Widget build(BuildContext context) {
     final store = ExpenseScope.of(context);
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
       children: [
         const MonthSelector(),
         const SizedBox(height: 16),
@@ -116,10 +119,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
             child: Text('No expenses recorded this month.'),
           ),
         ...store.categoryTotals.entries.map(
-          (e) => ListTile(
-            title: Text(e.key),
-            subtitle: LinearProgressIndicator(value: e.value / store.expense),
-            trailing: Text(money(e.value)),
+          (e) => CategorySummary(
+            category: e.key,
+            amount: e.value,
+            total: store.expense,
           ),
         ),
       ],

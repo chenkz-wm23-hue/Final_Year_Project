@@ -44,5 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Unrelated device-driver download kept outside the app source tree
+/MediaTek-MT7922-3.6.2.1438.cab
+/MediaTek-MT7922-3.6.2.1438/
+
 # Widget Preview related
 .widget_preview/

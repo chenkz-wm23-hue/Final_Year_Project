@@ -11,7 +11,7 @@ class RiskAlertsScreen extends StatelessWidget {
     final store = ExpenseScope.of(context);
     final alerts = store.riskAlerts;
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
       children: [
         const MonthSelector(),
         const SizedBox(height: 16),

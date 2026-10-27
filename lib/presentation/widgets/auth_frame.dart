@@ -46,6 +46,7 @@ class AuthFrame extends StatelessWidget {
                 const SizedBox(height: 22),
                 Text(
                   title,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 27,
                     fontWeight: FontWeight.w800,
@@ -53,7 +54,11 @@ class AuthFrame extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text(subtitle, style: const TextStyle(color: appMuted)),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: appMuted),
+                ),
                 const SizedBox(height: 31),
                 ...fields,
                 if (action == 'Login')
@@ -74,10 +79,10 @@ class AuthFrame extends StatelessWidget {
                 const SizedBox(height: 28),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
                   child: FilledButton(
                     onPressed: onAction,
                     style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
                       backgroundColor: appIndigo,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -96,6 +101,7 @@ class AuthFrame extends StatelessWidget {
                 GestureDetector(
                   onTap: () => onLink(context),
                   child: Text.rich(
+                    textAlign: TextAlign.center,
                     TextSpan(
                       text: footer,
                       style: const TextStyle(color: appMuted),

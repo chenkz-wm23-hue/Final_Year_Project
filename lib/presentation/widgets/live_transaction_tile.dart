@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/expense_store.dart';
 import '../screens/transaction_form_screen.dart';
+import 'async_button.dart';
 
 class LiveTransactionTile extends StatelessWidget {
   final TransactionEntry entry;
@@ -15,7 +16,19 @@ class LiveTransactionTile extends StatelessWidget {
         child: Icon(entry.income ? Icons.south_west : Icons.north_east),
       ),
       title: Text(entry.description),
-      subtitle: Text('${entry.category} · ${dateLabel(entry.date)}'),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${entry.category} · ${dateLabel(entry.date)}'),
+          Text(
+            '${entry.income ? '+' : '-'}${money(entry.amount)}',
+            style: TextStyle(
+              color: entry.income ? Colors.teal : Colors.deepOrange,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
@@ -26,12 +39,6 @@ class LiveTransactionTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '${entry.income ? '+' : '-'}${money(entry.amount)}',
-            style: TextStyle(
-              color: entry.income ? Colors.teal : Colors.deepOrange,
-            ),
-          ),
           PopupMenuButton<String>(
             tooltip: 'Transaction actions',
             onSelected: (value) async {
@@ -66,7 +73,17 @@ class LiveTransactionTile extends StatelessWidget {
                   ],
                 ),
               );
-              if (confirmed == true) store.delete(entry.id);
+              if (confirmed == true) {
+                try {
+                  await store.delete(entry.id);
+                } catch (error) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(friendlyError(error))),
+                    );
+                  }
+                }
+              }
             },
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'edit', child: Text('Edit')),

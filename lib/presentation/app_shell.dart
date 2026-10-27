@@ -49,7 +49,14 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(labels[selected]),
+      title: Tooltip(
+        message: labels[selected],
+        child: Text(
+          labels[selected],
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
       backgroundColor: appCanvas,
       actions: [
         IconButton(

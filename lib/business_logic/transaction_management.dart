@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../data/repositories/expense_repository.dart';
 import '../data/models/transaction.dart';
 
@@ -11,7 +13,7 @@ class TransactionManagement {
           )
           .toList()
         ..sort((a, b) => b.date.compareTo(a.date));
-  void save({
+  FutureOr<void> save({
     int? id,
     required String description,
     required double amount,
@@ -22,7 +24,7 @@ class TransactionManagement {
     if (description.trim().isEmpty || !amount.isFinite || amount <= 0) {
       throw ArgumentError('Enter a description and positive amount.');
     }
-    repository.upsertTransaction(
+    return repository.upsertTransaction(
       TransactionEntry(
         id: id ?? repository.nextTransactionId(),
         description: description.trim(),
@@ -34,5 +36,5 @@ class TransactionManagement {
     );
   }
 
-  void delete(int id) => repository.deleteTransaction(id);
+  FutureOr<void> delete(int id) => repository.deleteTransaction(id);
 }

@@ -1,11 +1,13 @@
 # Smart Expense Tracker architecture
 
-The folders map to the three layers in the system diagram. The application still runs with in-memory data; restarting it resets changes.
+The folders map to the three layers in the system diagram. The running app uses Supabase Auth and persistent, per-user database records. The in-memory repository is retained for offline UI tests only.
 
 ```text
 lib/
   main.dart                         Entry point
   app.dart                          App setup and dependency ownership
+  connected_app.dart                Auth-driven navigation and account loading
+  config/supabase_config.dart        Public project URL and publishable key
   presentation/
     app_shell.dart                  Navigation
     screens/
@@ -22,7 +24,8 @@ lib/
     widgets/                        Reusable UI components
     theme/                          Colors
   business_logic/
-    authentication.dart             Future authentication contract
+    authentication.dart             Authentication contract
+    supabase_authentication.dart     Email/password Auth implementation
     transaction_management.dart     Add, edit, delete and monthly selection
     budget_management.dart          Validate and update monthly budgets
     async_task_producer.dart         Local asynchronous task scheduling utility
@@ -44,21 +47,22 @@ lib/
     repositories/
       expense_repository.dart       Storage contract
       in_memory_expense_repository.dart
-    database/mysql_database.dart    Future database boundary only
+      supabase_expense_repository.dart Async, account-scoped persistence
+    database/supabase_database.dart Client initialization and session restoration
 ```
 
 ## Dependency flow
 
-Screens call the presentation state, which calls business services. Those services use data models and the repository contract. Business and data layers have no Flutter imports. The in-memory repository owns transactions, monthly budgets, the profile, categories and keywords. Recommendation and risk models represent derived results, recalculated when screens read current state.
+Screens call the presentation state, which calls business services and the repository contract. The Supabase adapter maps database records to domain models and updates its local cache only after successful writes. Auth changes dispose account state and reset navigation. Recommendation and risk models remain derived results, recalculated from the loaded transactions and budgets; this client does not write backend-generated insight tables.
 
 ## Implemented and reserved components
 
 Transaction management, budgeting, dashboard calculations, keyword categorisation, recommendations, profile updates and rule-based alerts are connected to the running UI.
 
-Authentication remains a demo flow. Its file defines a future contract; credentials are not verified. The ML risk evaluator is also a contract, not a trained model. The current alert screen uses the separate rule-based evaluator. The async task producer is an available local scheduling utility, not a background worker or durable queue, and is not required by the synchronous demo.
+Authentication uses Supabase email/password sign-in, registration and logout. When confirmation is required, registration asks the user to confirm their email before logging in. The ML risk evaluator remains a contract, not a trained model. The current alert screen uses the separate rule-based evaluator. The async task producer is a local scheduling utility, not a durable background worker.
 
-MySQL is not connected. No database driver, credentials, network calls or persistence have been added. A future server should own MySQL access and expose an authenticated API to the app rather than embedding database credentials in Flutter.
+The Supabase database is deployed to project `plmmhvvxsqiudqqrfijl`. See `supabase/README.md` for access policies and configuration. Only a public publishable key is embedded; Auth sessions and row-level security enforce access. Saving requires a network connection; errors keep forms open and do not apply unconfirmed changes to the cache.
 
 ## Verification
 
-Run `flutter analyze` and `flutter test`. Tests cover transaction validation and CRUD, monthly budget isolation, keyword suggestions, and the expense form save/delete flow.
+Run `flutter analyze` and `flutter test`. Tests cover responsive layouts, validation, the expense form flow, and mock-HTTP Supabase Auth/CRUD contracts including failed writes and reloading records. Mock tests do not replace a real email-confirmation and two-account RLS smoke test.

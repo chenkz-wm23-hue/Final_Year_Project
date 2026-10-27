@@ -4,6 +4,7 @@ import '../state/expense_store.dart';
 import '../widgets/app_card.dart';
 import '../widgets/month_selector.dart';
 import '../widgets/live_transaction_tile.dart';
+import '../widgets/category_summary.dart';
 import 'transactions_screen.dart';
 import 'recommendations_screen.dart';
 import 'risk_alerts_screen.dart';
@@ -81,12 +82,10 @@ class DashboardScreen extends StatelessWidget {
             child: Text('Add your first expense to see your spending summary.'),
           ),
         ...store.categoryTotals.entries.map(
-          (e) => ListTile(
-            title: Text(e.key),
-            subtitle: LinearProgressIndicator(value: e.value / store.expense),
-            trailing: Text(
-              '${money(e.value)}\n${(e.value / store.expense * 100).toStringAsFixed(0)}%',
-            ),
+          (e) => CategorySummary(
+            category: e.key,
+            amount: e.value,
+            total: store.expense,
           ),
         ),
         Wrap(

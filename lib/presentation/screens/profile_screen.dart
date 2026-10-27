@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../state/expense_store.dart';
+import '../state/auth_scope.dart';
+import '../widgets/async_button.dart';
 import 'edit_profile_screen.dart';
 import 'login_screen.dart';
 
@@ -10,7 +12,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = ExpenseScope.of(context);
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
       children: [
         const Center(
           child: CircleAvatar(radius: 45, child: Icon(Icons.person, size: 48)),
@@ -51,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
             applicationVersion: '1.0',
             children: [
               const Text(
-                'A local demo for tracking income, spending and budgets. Changes are kept only while the app is running.',
+                'Track income, spending and monthly budgets. When signed in, your records are saved to your Supabase account.',
               ),
             ],
           ),
@@ -63,9 +65,9 @@ class ProfileScreen extends StatelessWidget {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
-                title: const Text('Leave the demo?'),
+                title: const Text('Log out?'),
                 content: const Text(
-                  'Your temporary entries will remain until the app closes.',
+                  'Your saved account data will be available when you log in again.',
                 ),
                 actions: [
                   TextButton(
@@ -80,6 +82,19 @@ class ProfileScreen extends StatelessWidget {
               ),
             );
             if (confirmed == true && context.mounted) {
+              final auth = AuthScope.maybeOf(context);
+              if (auth != null) {
+                try {
+                  await auth.signOut();
+                } catch (error) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(friendlyError(error))),
+                    );
+                  }
+                }
+                return;
+              }
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
                 (_) => false,

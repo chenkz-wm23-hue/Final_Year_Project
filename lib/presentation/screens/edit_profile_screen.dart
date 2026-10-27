@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../state/expense_store.dart';
+import '../state/auth_scope.dart';
+import '../widgets/async_button.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -40,51 +42,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Edit Profile')),
-    body: Form(
-      key: form,
-      child: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          TextFormField(
-            controller: name,
-            decoration: const InputDecoration(labelText: 'Full name'),
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Enter your name' : null,
-          ),
-          TextFormField(
-            controller: email,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'Email'),
-            validator: (v) =>
-                RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v?.trim() ?? '')
-                ? null
-                : 'Enter a valid email',
-          ),
-          TextFormField(
-            controller: phone,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'Phone number'),
-          ),
-          TextFormField(
-            controller: address,
-            decoration: const InputDecoration(labelText: 'Address'),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () {
-              if (form.currentState!.validate()) {
-                ExpenseScope.of(context).updateProfile(
-                  name.text,
-                  email.text,
-                  phone.text,
-                  address.text,
-                );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save Changes'),
-          ),
-        ],
+    body: SafeArea(
+      child: Form(
+        key: form,
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            TextFormField(
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Full name'),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Enter your name' : null,
+            ),
+            TextFormField(
+              controller: email,
+              readOnly: AuthScope.maybeOf(context) != null,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+              validator: (v) =>
+                  RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                      .hasMatch(v?.trim() ?? '')
+                  ? null
+                  : 'Enter a valid email',
+            ),
+            TextFormField(
+              controller: phone,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: 'Phone number'),
+            ),
+            TextFormField(
+              controller: address,
+              decoration: const InputDecoration(labelText: 'Address'),
+            ),
+            const SizedBox(height: 24),
+            AsyncButton(
+              label: 'Save Changes',
+              onPressed: () async {
+                if (form.currentState!.validate()) {
+                  await ExpenseScope.of(context).updateProfile(
+                    name.text,
+                    email.text,
+                    phone.text,
+                    address.text,
+                  );
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ),
       ),
     ),
   );

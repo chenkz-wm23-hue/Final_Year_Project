@@ -24,6 +24,18 @@ class ExpenseStore extends ChangeNotifier {
   ExpenseStore({ExpenseRepository? repository})
     : repository = repository ?? InMemoryExpenseRepository();
   final ExpenseRepository repository;
+  bool _disposed = false;
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
   late final transactions = TransactionManagement(repository);
   late final budgets = BudgetManagement(repository);
   late final profiles = ProfileManagement(repository);
@@ -55,20 +67,20 @@ class ExpenseStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setBudget(double value) {
-    budgets.save(month, value);
+  Future<void> setBudget(double value) async {
+    await budgets.save(month, value);
     notifyListeners();
   }
 
-  void save({
+  Future<void> save({
     int? id,
     required String description,
     required double amount,
     required DateTime date,
     required String category,
     required bool income,
-  }) {
-    transactions.save(
+  }) async {
+    await transactions.save(
       id: id,
       description: description,
       amount: amount,
@@ -79,13 +91,18 @@ class ExpenseStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  void delete(int id) {
-    transactions.delete(id);
+  Future<void> delete(int id) async {
+    await transactions.delete(id);
     notifyListeners();
   }
 
-  void updateProfile(String name, String email, String phone, String address) {
-    profiles.update(name, email, phone, address);
+  Future<void> updateProfile(
+    String name,
+    String email,
+    String phone,
+    String address,
+  ) async {
+    await profiles.update(name, email, phone, address);
     notifyListeners();
   }
 
