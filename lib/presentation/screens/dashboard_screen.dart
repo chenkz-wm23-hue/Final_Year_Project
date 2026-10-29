@@ -5,6 +5,9 @@ import '../widgets/app_card.dart';
 import '../widgets/month_selector.dart';
 import '../widgets/live_transaction_tile.dart';
 import '../widgets/category_summary.dart';
+import '../widgets/finance_charts.dart';
+import 'income_screen.dart';
+import 'transaction_form_screen.dart';
 import 'transactions_screen.dart';
 import 'recommendations_screen.dart';
 import 'risk_alerts_screen.dart';
@@ -28,7 +31,7 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Balance this month'),
+              const Text('Recorded cash flow'),
               Text(
                 money(store.balance),
                 style: const TextStyle(
@@ -52,6 +55,47 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              const Text(
+                'Income minus expenses. Your budget is a spending limit, not income.',
+              ),
+              if (store.income == 0 && store.expense > 0) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'No received income recorded this month. Add income when you receive it.',
+                ),
+              ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Income'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const TransactionFormScreen(income: true),
+                      ),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Manage Income'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => Scaffold(
+                          appBar: AppBar(title: const Text('Income')),
+                          body: const SafeArea(child: IncomeScreen()),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -67,9 +111,25 @@ class DashboardScreen extends StatelessWidget {
                 minHeight: 8,
               ),
               const SizedBox(height: 12),
-              Text('${money(store.remaining)} remaining'),
+              Text(
+                store.remaining < 0
+                    ? '${money(-store.remaining)} over budget'
+                    : '${money(store.remaining)} budget remaining',
+              ),
+              const SizedBox(height: 6),
+              Text(
+                store.remaining < 0
+                    ? 'Spending exceeds your budget.'
+                    : store.remaining == 0
+                    ? 'You have used your full budget.'
+                    : 'Your spending is within budget.',
+              ),
             ],
           ),
+        ),
+        const SizedBox(height: 20),
+        AppCard(
+          child: CashFlowChart(income: store.income, expense: store.expense),
         ),
         const SizedBox(height: 20),
         const Text(
