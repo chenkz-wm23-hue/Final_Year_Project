@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'business_logic/supabase_authentication.dart';
+import 'business_logic/account_setup.dart';
+import 'presentation/screens/account_setup_screen.dart';
 import 'data/repositories/supabase_expense_repository.dart';
 import 'presentation/state/auth_scope.dart';
 import 'presentation/state/expense_store.dart';
@@ -35,6 +37,7 @@ class _ConnectedAppState extends State<ConnectedApp> {
       (event) {
         if (!mounted) return;
         final id = event.session?.user.id;
+        if (id != null && auth.registrationRequiresLogin) return;
         if (id != userId) setState(() => _setUser(id));
       },
       onError: (Object error) {
@@ -129,6 +132,28 @@ class _ConnectedAppState extends State<ConnectedApp> {
                       ),
                     ),
                   ),
+                );
+              }
+              if (AccountSetup(widget.client).required) {
+                final activeStore = store!;
+                final setupMonth = activeStore.month;
+                return AccountSetupScreen(
+                  monthLabel: activeStore.monthLabel,
+                  onSignOut: auth.signOut,
+                  onComplete:
+                      (income, budget, savingGoalName, savingGoalAmount) async {
+                    await AccountSetup(widget.client).complete(
+                      activeStore.repository,
+                      setupMonth,
+                      income,
+                      budget,
+                      savingGoalName: savingGoalName,
+                      savingGoalAmount: savingGoalAmount,
+                    );
+                    if (mounted && identical(store, activeStore)) {
+                      setState(() {});
+                    }
+                  },
                 );
               }
               return const AppShell();

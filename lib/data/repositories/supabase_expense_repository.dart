@@ -1,6 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'expense_repository.dart';
+import 'insight_repository.dart';
+import '../models/recommendation.dart';
+import '../models/risk_alert.dart';
 import '../models/transaction.dart';
 import '../models/user.dart';
 import '../models/budget.dart';
@@ -8,7 +11,8 @@ import '../models/category.dart';
 import '../models/keyword.dart';
 
 /// One repository per authenticated account. Cache changes only after server success.
-class SupabaseExpenseRepository implements ExpenseRepository {
+class SupabaseExpenseRepository
+    implements ExpenseRepository, InsightRepository {
   SupabaseExpenseRepository(this.client, this.userId);
   final SupabaseClient client;
   final String userId;
@@ -16,6 +20,56 @@ class SupabaseExpenseRepository implements ExpenseRepository {
   List<MonthlyBudget> _budgets = [];
   List<Map<String, dynamic>> _categoryRows = [];
   List<CategoryKeyword> _keywords = [];
+  List<Map<String, dynamic>> _recommendations = [], _alerts = [];
+  @override
+  bool insightsUnavailable = false;
+
+  @override
+  List<Recommendation> recommendationsFor(DateTime month) => _recommendations
+      .where((r) => r['month'] == _date(DateTime(month.year, month.month)))
+      .map(
+        (r) => Recommendation(
+          title: r['title'] as String,
+          description: r['description'] as String,
+          label: r['label'] as String,
+        ),
+      )
+      .toList();
+
+  @override
+  List<RiskAlert> riskAlertsFor(DateTime month) => _alerts
+      .where((r) => r['month'] == _date(DateTime(month.year, month.month)))
+      .map(
+        (r) => RiskAlert(
+          title: r['title'] as String,
+          description: r['description'] as String,
+          label: r['label'] as String,
+          severity: r['severity'] == 'high'
+              ? RiskSeverity.high
+              : RiskSeverity.warning,
+        ),
+      )
+      .toList();
+
+  @override
+  Future<void> refreshInsights() async {
+    try {
+      _checkSession();
+      final recommendations = await _readAll('recommendations', owned: true);
+      final alerts = await _readAll('risk_alerts', owned: true);
+      _checkSession();
+      _recommendations = recommendations;
+      _alerts = alerts;
+      insightsUnavailable = false;
+    } catch (_) {
+      // Source writes may already be committed. Do not report a failed save
+      // and encourage a duplicate transaction just because this read failed.
+      _recommendations = [];
+      _alerts = [];
+      insightsUnavailable = true;
+    }
+  }
+
   UserProfile _user = const UserProfile(name: '', email: '');
   void _checkSession() {
     if (client.auth.currentUser?.id != userId) {
@@ -74,6 +128,7 @@ class SupabaseExpenseRepository implements ExpenseRepository {
         amount: (r['amount'] as num).toDouble(),
       );
     }).toList();
+    await refreshInsights();
   }
 
   TransactionEntry _transaction(Map<String, dynamic> row) => TransactionEntry(
@@ -121,6 +176,7 @@ class SupabaseExpenseRepository implements ExpenseRepository {
     _checkSession();
     final saved = _transaction(row);
     _entries = [..._entries.where((e) => e.id != saved.id), saved];
+    await refreshInsights();
   }
 
   @override
@@ -135,6 +191,7 @@ class SupabaseExpenseRepository implements ExpenseRepository {
         .single();
     _checkSession();
     _entries = _entries.where((e) => e.id != id).toList();
+    await refreshInsights();
   }
 
   @override
@@ -166,6 +223,7 @@ class SupabaseExpenseRepository implements ExpenseRepository {
       amount: (row['amount'] as num).toDouble(),
     );
     _budgets = [..._budgets.where((b) => b.key != saved.key), saved];
+    await refreshInsights();
   }
 
   @override

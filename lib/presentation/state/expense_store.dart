@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/repositories/expense_repository.dart';
+import '../../data/repositories/insight_repository.dart';
 import '../../data/repositories/in_memory_expense_repository.dart';
 import '../../data/models/transaction.dart';
 import '../../data/models/recommendation.dart';
@@ -46,9 +47,22 @@ class ExpenseStore extends ChangeNotifier {
   List<TransactionEntry> get entries => repository.transactions;
   List<TransactionEntry> get monthly => transactions.forMonth(month);
   DashboardSummary get summary => calculator.calculate(monthly, budget);
-  List<Recommendation> get recommendations =>
-      recommendationService.generate(summary);
-  List<RiskAlert> get riskAlerts => riskService.evaluate(summary);
+  List<Recommendation> get recommendations => repository is InsightRepository
+      ? (repository as InsightRepository).recommendationsFor(month)
+      : recommendationService.generate(summary);
+  List<RiskAlert> get riskAlerts => repository is InsightRepository
+      ? (repository as InsightRepository).riskAlertsFor(month)
+      : riskService.evaluate(summary);
+  bool get insightsUnavailable =>
+      repository is InsightRepository &&
+      (repository as InsightRepository).insightsUnavailable;
+  Future<void> refreshInsights() async {
+    if (repository is InsightRepository) {
+      await (repository as InsightRepository).refreshInsights();
+      notifyListeners();
+    }
+  }
+
   String get name => repository.user.name;
   String get email => repository.user.email;
   String get phone => repository.user.phone;

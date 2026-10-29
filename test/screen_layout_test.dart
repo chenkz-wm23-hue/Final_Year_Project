@@ -12,9 +12,16 @@ import 'package:final_year_project/presentation/screens/edit_profile_screen.dart
 import 'package:final_year_project/presentation/screens/recommendations_screen.dart';
 import 'package:final_year_project/presentation/screens/risk_alerts_screen.dart';
 import 'package:final_year_project/presentation/app_shell.dart';
+import 'package:final_year_project/presentation/screens/account_setup_screen.dart';
 
 void main() {
+  final setup = AccountSetupScreen(
+    monthLabel: 'October 2026',
+    onComplete: (_, _, _, _) async {},
+    onSignOut: () async {},
+  );
   final screens = <String, Widget>{
+    'account setup': setup,
     'login': const LoginScreen(),
     'register': const RegisterScreen(),
     'dashboard': const Scaffold(body: DashboardScreen()),
@@ -118,8 +125,12 @@ void main() {
         matching: find.widgetWithText(ListTile, label),
       );
       await tester.scrollUntilVisible(
-        destination, 150,
-        scrollable: find.descendant(of: find.byType(Drawer), matching: find.byType(Scrollable)),
+        destination,
+        150,
+        scrollable: find.descendant(
+          of: find.byType(Drawer),
+          matching: find.byType(Scrollable),
+        ),
       );
       await tester.pumpAndSettle();
       expect(destination.hitTestable(), findsOneWidget);
@@ -130,6 +141,7 @@ void main() {
   });
 
   for (final item in [
+    (setup, 'Finish setup'),
     (const TransactionFormScreen(income: false), 'Save Expense'),
     (const TransactionFormScreen(income: true), 'Save Income'),
     (const EditProfileScreen(), 'Save Changes'),
@@ -152,7 +164,11 @@ void main() {
         ),
       );
       final button = find.widgetWithText(FilledButton, item.$2);
-      await tester.scrollUntilVisible(button, 150, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(
+        button,
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       expect(button.hitTestable(), findsOneWidget);
       expect(tester.getRect(button).bottom, lessThanOrEqualTo(360));

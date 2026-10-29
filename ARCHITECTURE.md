@@ -53,15 +53,23 @@ lib/
 
 ## Dependency flow
 
-Screens call the presentation state, which calls business services and the repository contract. The Supabase adapter maps database records to domain models and updates its local cache only after successful writes. Auth changes dispose account state and reset navigation. Recommendation and risk models remain derived results, recalculated from the loaded transactions and budgets; this client does not write backend-generated insight tables.
+Screens call the presentation state, which calls business services and the repository contract. The Supabase adapter maps database records to domain models and updates its local cache only after successful writes. Auth changes dispose account state and reset navigation. Database triggers generate and persist recommendations and rule-based risk alerts atomically with transaction and budget changes. The connected app reads these tables through InsightRepository; Dart generators remain the offline/demo implementation.
 
 ## Implemented and reserved components
 
 Transaction management, budgeting, dashboard calculations, keyword categorisation, recommendations, profile updates and rule-based alerts are connected to the running UI.
 
-Authentication uses Supabase email/password sign-in, registration and logout. When confirmation is required, registration asks the user to confirm their email before logging in. The ML risk evaluator remains a contract, not a trained model. The current alert screen uses the separate rule-based evaluator. The async task producer is a local scheduling utility, not a durable background worker.
+Authentication uses Supabase email/password sign-in, registration and logout. When confirmation is required, registration asks the user to confirm their email before logging in. The ML risk evaluator remains a contract, not a trained model. Connected alerts use persisted database rules. The async task producer is a local scheduling utility, not a durable background worker.
 
 The Supabase database is deployed to project `plmmhvvxsqiudqqrfijl`. See `supabase/README.md` for access policies and configuration. Only a public publishable key is embedded; Auth sessions and row-level security enforce access. Saving requires a network connection; errors keep forms open and do not apply unconfirmed changes to the cache.
+
+## Registration and first-time setup
+
+New registrations return to Login with the email prefilled. Any automatically issued signup session is signed out so the user explicitly logs in. Email confirmation, if enabled on Supabase, still applies; the login page explains it.
+
+New accounts created by this version carry `onboarding_required: true` in Auth metadata. After login and data loading, they see `AccountSetupScreen` before the dashboard. `AccountSetup` saves the current-month budget through the repository, then saves `expected_monthly_income` and completion flags through Supabase Auth. This metadata is a UI preference, never an authorization rule. Expected income is a planning estimate and does not create an income transaction. Existing accounts without the onboarding marker retain their previous flow.
+
+Budget upsert precedes marking setup complete, so failed saves leave setup available; retry updates the same month instead of duplicating transactions. New setup money fields validate two-decimal precision and the database amount limit, allowing zero expected income but requiring a positive budget.
 
 ## Verification
 

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../business_logic/account_setup.dart';
 import '../state/expense_store.dart';
+import '../state/auth_scope.dart';
 import '../widgets/app_card.dart';
 import '../widgets/month_selector.dart';
 import '../widgets/category_summary.dart';
 import '../widgets/async_button.dart';
+import '../widgets/saving_goal_dialog.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -13,6 +17,27 @@ class BudgetScreen extends StatefulWidget {
 }
 
 class _BudgetScreenState extends State<BudgetScreen> {
+  Future<void> editSavingGoal(ExpenseStore store) async {
+    final client = AuthScope.maybeOf(context)?.client;
+    final user = client?.auth.currentUser;
+    if (client == null || user == null) return;
+    final metadata = user.userMetadata ?? const <String, dynamic>{};
+    final expectedIncome =
+        (metadata['expected_monthly_income'] as num?)?.toDouble() ?? 0;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => SavingGoalDialog(
+        metadata: metadata,
+        expectedIncome: expectedIncome,
+        budget: store.budget,
+        onSave: (data) async {
+          await client.auth.updateUser(UserAttributes(data: data));
+        },
+      ),
+    );
+    if (mounted && saved == true) setState(() {});
+  }
+
   Future<void> editBudget(ExpenseStore store) async {
     var amount = store.budget.toStringAsFixed(2);
     final form = GlobalKey<FormState>();
@@ -62,6 +87,21 @@ class _BudgetScreenState extends State<BudgetScreen> {
   @override
   Widget build(BuildContext context) {
     final store = ExpenseScope.of(context);
+    final metadata = AuthScope.maybeOf(context)
+        ?.client
+        .auth
+        .currentUser
+        ?.userMetadata;
+    final goalName = metadata?['saving_goal_name'] as String?;
+    final goalAmount = (metadata?['saving_goal_amount'] as num?)?.toDouble();
+    final monthlySaving = (metadata?['monthly_saving_amount'] as num?)
+        ?.toDouble();
+    final months = goalAmount == null || monthlySaving == null
+        ? null
+        : AccountSetup.monthsToReachGoal(
+            goalAmount: goalAmount,
+            monthlySaving: monthlySaving,
+          );
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
       children: [
@@ -96,6 +136,43 @@ class _BudgetScreenState extends State<BudgetScreen> {
           ),
         ),
         const SizedBox(height: 16),
+        if (goalName != null && goalAmount != null && monthlySaving != null)
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Saving goal'),
+                const SizedBox(height: 4),
+                Text(
+                  goalName,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text('Goal: ${money(goalAmount)}'),
+                Text('Planned savings: ${money(monthlySaving)} per month'),
+                const SizedBox(height: 8),
+                Text(
+                  months == null
+                      ? 'Set aside money each month to estimate your timeline.'
+                      : 'At this rate, you can reach your goal in about $months ${months == 1 ? 'month' : 'months'}.',
+                ),
+              ],
+            ),
+          ),
+        if (goalName != null && goalAmount != null && monthlySaving != null)
+          const SizedBox(height: 16),
+        if (AuthScope.maybeOf(context)?.client.auth.currentUser != null)
+          OutlinedButton.icon(
+            onPressed: () => editSavingGoal(store),
+            icon: const Icon(Icons.savings_outlined),
+            label: Text(
+              goalName == null ? 'Set saving goal' : 'Update saving goal',
+            ),
+          ),
+        if (AuthScope.maybeOf(context)?.client.auth.currentUser != null)
+          const SizedBox(height: 12),
         FilledButton(
           onPressed: () => editBudget(store),
           child: const Text('Update Budget'),

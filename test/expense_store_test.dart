@@ -60,6 +60,11 @@ void main() {
     addTearDown(store.dispose);
     expect(store.suggestCategory('KFC dinner'), 'Food');
     expect(store.suggestCategory('GRAB ride'), 'Transport');
+    expect(store.suggestCategory('Petron fuel'), 'Fuel');
+    expect(store.suggestCategory('BHP Petrol'), 'Fuel');
+    expect(store.suggestCategory('toys and a movie'), 'Entertainment');
+    expect(store.suggestCategory('food court'), 'Food');
+    expect(store.suggestCategory('etc'), 'Others');
     expect(store.suggestCategory('unknown'), 'Others');
   });
 }

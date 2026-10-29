@@ -38,13 +38,15 @@ Amounts are positive MYR values; `transaction_type` distinguishes income from ex
 - Unauthenticated clients cannot read app tables.
 - Signed-in users can read/update their own profile and create/read/update/delete their own transactions and budgets. Owners cannot be reassigned to other users.
 - Signed-in users can read categories and keywords but cannot change them.
-- Recommendation and alert records are readable by their owner. Only trusted backend jobs can write generated results; no such jobs are deployed by this migration.
+- Recommendation and alert records are readable only by their owner. The `persist_monthly_insights` migration installs private database triggers to generate results; clients cannot write these tables or call the private generators.
 - `expense_tracker_month_summary(p_month)` returns income, expenses, balance, budget and remaining budget under the caller's RLS policies. A missing budget defaults to RM 1,500, matching the current app.
 - Account deletion cascades to its app records. Profile deletion is not granted to the client.
 
 The mobile app must use the project's public/publishable client key with Supabase Auth. Never embed a service-role or secret key in Flutter. A public key alone does not authenticate a user or bypass these policies.
 
 ## Run and verify the connected app
+
+New registrations now return to Login (any automatic signup session is signed out). After the first explicit login, new users enter their expected monthly income and current-month spending budget. Income and setup completion are stored in Auth user metadata; the budget uses the existing owner-scoped budgets table. Metadata is only a preference, not an RLS authorization claim. Existing accounts without the new onboarding marker are not forced to repeat setup. No schema migration is required.
 
 1. Run `flutter pub get`, then stop and run the app again (native dependencies were added; hot reload alone is insufficient).
 2. Register with an email you control. If confirmation is enabled, open the confirmation email, then return to the app and log in. Delivery/redirect settings are managed in Supabase Auth; configure production email delivery and redirect URLs before release.
@@ -53,6 +55,16 @@ The mobile app must use the project's public/publishable client key with Supabas
 
 The defaults in `lib/config/supabase_config.dart` contain only the project's public URL and publishable key. Override with `--dart-define=SUPABASE_URL=...` and `--dart-define=SUPABASE_PUBLISHABLE_KEY=...` for a different project with the same schema. Never use a service-role or secret key in the app. The SDK persists and refreshes Auth sessions; logout clears the local session and account cache.
 
-Automated tests use mock HTTP and do not send confirmation emails. Real mailbox confirmation and the two-user database smoke test still require manual verification. Recommendations and risk alerts currently derive from the saved data in Dart, not from a deployed backend job.
+Automated mock tests do not send confirmation emails. The live emulator test in `integration_test/transactions_live_test.dart` checks saving and reading actual records and insights, then restores the budget and removes temporary transactions. `tests/insights_regression.sql` checks thresholds, moved/deleted transactions and owner access inside a rolled-back transaction.
+
+## Persisted recommendations and risk alerts
+
+Apply both migrations in order to new projects. `20261029091953_persist_monthly_insights.sql` is already deployed to the configured project. It backfills historical months and adds triggers for transaction and budget inserts, updates and deletes. Old and new months are refreshed when dates change. Results are unique per owner/month/rule; obsolete rules are removed. Rule-based risk rows are regenerated while any future ML rows are preserved. The default budget remains RM 1,500 when no budget record exists.
+
+Private security-definer functions perform only internal derived-data writes, with a fixed empty search path, revoked client access, account checks and per-account transaction locks. Source writes still obey RLS. Failure during generation rolls back the source write too. Auth user metadata is never used for authorization.
+
+The app reloads persisted insights after data changes and on login. Pull down on either insight screen to refresh changes from another device. A failed insight read shows Retry rather than a misleading empty state; it does not mark an already committed transaction as failed. Results are current snapshots, not an alert history or ML predictions.
+
+Security advisor check on 29 October 2026 found no database-policy/function findings; it reported the existing disabled leaked-password-protection Auth setting. This integration does not change that setting.
 
 References: [Supabase Auth profiles](https://supabase.com/docs/guides/auth/managing-user-data), [row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security), [database migrations](https://supabase.com/docs/guides/local-development/database-migrations).

@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../state/auth_scope.dart';
 import '../widgets/async_button.dart';
 import 'register_screen.dart';
 
 class AuthFormScreen extends StatefulWidget {
-  const AuthFormScreen({super.key, this.register = false});
+  const AuthFormScreen({
+    super.key,
+    this.register = false,
+    this.initialEmail = '',
+    this.initialNotice,
+  });
   final bool register;
+  final String initialEmail;
+  final String? initialNotice;
   @override
   State<AuthFormScreen> createState() => _AuthFormScreenState();
 }
@@ -19,6 +27,18 @@ class _AuthFormScreenState extends State<AuthFormScreen> {
       confirm = TextEditingController();
   bool hidden = true;
   String? notice;
+  String? loginError;
+  void clearLoginError(String _) {
+    if (loginError != null) setState(() => loginError = null);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    email.text = widget.initialEmail;
+    notice = widget.initialNotice;
+  }
+
   @override
   void dispose() {
     name.dispose();
@@ -79,12 +99,15 @@ class _AuthFormScreenState extends State<AuthFormScreen> {
                     ],
                     TextFormField(
                       controller: email,
+                      forceErrorText: loginError,
+                      onChanged: clearLoginError,
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         prefixIcon: Icon(Icons.mail_outline),
                         border: OutlineInputBorder(),
+                        errorMaxLines: 3,
                       ),
                       validator: (v) =>
                           RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
@@ -95,6 +118,7 @@ class _AuthFormScreenState extends State<AuthFormScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: password,
+                      onChanged: clearLoginError,
                       obscureText: hidden,
                       autocorrect: false,
                       enableSuggestions: false,
@@ -160,14 +184,39 @@ class _AuthFormScreenState extends State<AuthFormScreen> {
                             email.text,
                             password.text,
                           );
-                          if (mounted &&
-                              auth.client.auth.currentSession == null) {
-                            setState(
-                              () => notice = 'Check your email to confirm your account, then return here to log in. If you already have an account, use Login.',
+                          if (context.mounted) {
+                            final registeredEmail = email.text.trim();
+                            final needsConfirmation = auth.confirmationRequired;
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => AuthFormScreen(
+                                  initialEmail: registeredEmail,
+                                  initialNotice: needsConfirmation
+                                      ? 'Registration submitted. Check your email to confirm your account, then log in. If already registered, use your existing password.'
+                                      : 'Registration successful. Please log in to set up your account.',
+                                ),
+                              ),
+                              (_) => false,
                             );
                           }
                         } else {
-                          await auth.signIn(email.text, password.text);
+                          final submittedEmail = email.text;
+                          final submittedPassword = password.text;
+                          try {
+                            await auth.signIn(
+                              submittedEmail,
+                              submittedPassword,
+                            );
+                          } on AuthException catch (error) {
+                            if (error.code != 'invalid_credentials') rethrow;
+                            if (mounted &&
+                                email.text == submittedEmail &&
+                                password.text == submittedPassword) {
+                              setState(
+                                () => loginError = 'Invalid email or password. Check your details or register a new account.',
+                              );
+                            }
+                          }
                         }
                       },
                     ),
