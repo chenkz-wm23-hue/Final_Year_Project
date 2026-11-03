@@ -8,6 +8,7 @@ import 'screens/profile_screen.dart';
 import 'screens/recommendations_screen.dart';
 import 'screens/risk_alerts_screen.dart';
 import 'screens/add_expense_screen.dart';
+import 'screens/receipt_scan_screen.dart';
 import 'theme/app_colors.dart';
 
 class AppShell extends StatefulWidget {
@@ -109,14 +110,28 @@ class _AppShellState extends State<AppShell> {
     ),
     bottomNavigationBar: NavigationBar(
       selectedIndex: [0, 2, 3, 6].contains(selected)
-          ? [0, 2, 3, 6].indexOf(selected)
+          ? [0, 2, -1, 3, 6].indexOf(selected)
           : 0,
-      onDestinationSelected: (i) => setState(() => selected = [0, 2, 3, 6][i]),
+      onDestinationSelected: (i) {
+        if (i == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReceiptScanScreen()),
+          );
+        } else {
+          setState(() => selected = [0, 2, -1, 3, 6][i]);
+        }
+      },
       destinations: const [
         NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
         NavigationDestination(
           icon: Icon(Icons.receipt_long_outlined),
           label: 'Expense',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.document_scanner_outlined),
+          label: 'Scan',
+          tooltip: 'Scan receipt',
         ),
         NavigationDestination(
           icon: Icon(Icons.account_balance_wallet_outlined),

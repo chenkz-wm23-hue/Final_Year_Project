@@ -93,6 +93,9 @@ void main() {
       httpClient: MockClient((request) async {
         requests.add(request);
         final path = request.url.path;
+        if (path.endsWith('/rpc/refresh_monthly_salary')) {
+          return http.Response('', 204, request: request);
+        }
         if (path.endsWith('/signup')) {
           user['user_metadata'] = jsonDecode(request.body)['data'];
           if (!autoConfirm) return response(user);
@@ -502,6 +505,9 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Laptop'), findsOneWidget);
     expect(client.auth.currentUser!.userMetadata!['saving_goal_amount'], 3000);
+    await tester.pump(const Duration(seconds: 5)); // Let the failed-save snackbar dismiss.
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Update saving goal'));
     await tester.tap(find.text('Update saving goal'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'Unsaved');

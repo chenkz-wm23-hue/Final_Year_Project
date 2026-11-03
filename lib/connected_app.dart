@@ -21,16 +21,56 @@ class ConnectedApp extends StatefulWidget {
   State<ConnectedApp> createState() => _ConnectedAppState();
 }
 
-class _ConnectedAppState extends State<ConnectedApp> {
+class _ConnectedAppState extends State<ConnectedApp>
+    with WidgetsBindingObserver {
   late final SupabaseAuthentication auth;
   late final StreamSubscription<AuthState> subscription;
   String? userId;
   ExpenseStore? store;
   Future<void>? loading;
+  Timer? monthTimer;
+  DateTime? loadedMonth;
+  static const malaysiaOffset = Duration(hours: 8);
+  DateTime currentMonth() {
+    final local = DateTime.now().toUtc().add(malaysiaOffset);
+    return DateTime(local.year, local.month);
+  }
+
+  void scheduleMonthCheck() {
+    monthTimer?.cancel();
+    final month = loadedMonth;
+    if (month == null) return;
+    final next = DateTime.utc(
+      month.year,
+      month.month + 1,
+    ).subtract(malaysiaOffset);
+    monthTimer = Timer(next.difference(DateTime.now().toUtc()), checkMonth);
+  }
+
+  void checkMonth() {
+    if (!mounted || userId == null) return;
+    if (currentMonth() != loadedMonth) {
+      final selectedMonth = store!.month;
+      final viewingCurrent = selectedMonth == loadedMonth;
+      setState(() {
+        _setUser(userId);
+        if (!viewingCurrent) store!.month = selectedMonth;
+      });
+    } else {
+      scheduleMonthCheck();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) checkMonth();
+  }
+
   final messenger = GlobalKey<ScaffoldMessengerState>();
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     auth = SupabaseAuthentication(widget.client);
     _setUser(widget.client.auth.currentUser?.id);
     subscription = widget.client.auth.onAuthStateChange.listen(
@@ -52,17 +92,22 @@ class _ConnectedAppState extends State<ConnectedApp> {
     store?.dispose();
     store = null;
     userId = id;
+    loadedMonth = id == null ? null : currentMonth();
+    scheduleMonthCheck();
     if (id == null) {
       loading = null;
       return;
     }
     final repository = SupabaseExpenseRepository(widget.client, id);
     store = ExpenseStore(repository: repository);
+    store!.month = loadedMonth!;
     loading = repository.load();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    monthTimer?.cancel();
     subscription.cancel();
     store?.dispose();
     super.dispose();
@@ -142,18 +187,18 @@ class _ConnectedAppState extends State<ConnectedApp> {
                   onSignOut: auth.signOut,
                   onComplete:
                       (income, budget, savingGoalName, savingGoalAmount) async {
-                    await AccountSetup(widget.client).complete(
-                      activeStore.repository,
-                      setupMonth,
-                      income,
-                      budget,
-                      savingGoalName: savingGoalName,
-                      savingGoalAmount: savingGoalAmount,
-                    );
-                    if (mounted && identical(store, activeStore)) {
-                      setState(() {});
-                    }
-                  },
+                        await AccountSetup(widget.client).complete(
+                          activeStore.repository,
+                          setupMonth,
+                          income,
+                          budget,
+                          savingGoalName: savingGoalName,
+                          savingGoalAmount: savingGoalAmount,
+                        );
+                        if (mounted && identical(store, activeStore)) {
+                          setState(() {});
+                        }
+                      },
                 );
               }
               return const AppShell();

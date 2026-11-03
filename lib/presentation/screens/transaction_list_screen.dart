@@ -31,6 +31,13 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
       children: [
         const MonthSelector(),
+        if (widget.income == true)
+          const Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: Text(
+              'Salary repeats each month. Edit this month’s salary to update the amount carried into the following month.',
+            ),
+          ),
         if (widget.income != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),

@@ -122,6 +122,8 @@ class ExpenseStore extends ChangeNotifier {
 
   String suggestCategory(String text) =>
       ExpenseCategorisation(repository.keywords).suggest(text);
+  String suggestReceiptCategory(List<String> lines) =>
+      ExpenseCategorisation(repository.keywords).suggestReceipt(lines);
 }
 
 class ExpenseScope extends InheritedNotifier<ExpenseStore> {

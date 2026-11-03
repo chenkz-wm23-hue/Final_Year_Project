@@ -93,6 +93,9 @@ class SupabaseExpenseRepository
 
   Future<void> load() async {
     _checkSession();
+    // The server chooses the actual calendar month and deduplicates retries.
+    await client.rpc('refresh_monthly_salary');
+    _checkSession();
     final categories = await _readAll('categories');
     final keywords = await _readAll('keywords');
     final profile = await client
