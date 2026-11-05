@@ -17,7 +17,80 @@ class ExpenseCategorisation {
     'food': 'Food',
     'restaurant': 'Food',
     'cafe': 'Food',
-    'grocery': 'Food',
+    'grocer': 'Shopping',
+    'grocers': 'Shopping',
+    'grocery': 'Shopping',
+    'groceries': 'Shopping',
+    'supermarket': 'Shopping',
+    'hypermarket': 'Shopping',
+    'minimart': 'Shopping',
+    'mini market': 'Shopping',
+    'pasar raya': 'Shopping',
+    'pasar mini': 'Shopping',
+    'tesco': 'Shopping',
+    'lotus': 'Shopping',
+    'aeon': 'Shopping',
+    'mydin': 'Shopping',
+    '99 speedmart': 'Shopping',
+    'shopee': 'Shopping',
+    'lazada': 'Shopping',
+    'uniqlo': 'Shopping',
+    'mr diy': 'Shopping',
+    'clothing': 'Shopping',
+    'shoes': 'Shopping',
+    'mcdonald': 'Food',
+    'mcdonalds': 'Food',
+    'mcdonald s': 'Food',
+    'pizza hut': 'Food',
+    'domino': 'Food',
+    'subway': 'Food',
+    'starbucks': 'Food',
+    'tealive': 'Food',
+    'zus coffee': 'Food',
+    'grabfood': 'Food',
+    'foodpanda': 'Food',
+    'restoran': 'Food',
+    'kedai makan': 'Food',
+    'kopitiam': 'Food',
+    'bakery': 'Food',
+    'nasi': 'Food',
+    'noodles': 'Food',
+    'breakfast': 'Food',
+    'lunch': 'Food',
+    'dinner': 'Food',
+    'bhpetrol': 'Fuel',
+    'minyak petrol': 'Fuel',
+    'ron95': 'Fuel',
+    'ron97': 'Fuel',
+    'grab': 'Transport',
+    'rapidkl': 'Transport',
+    'mrt': 'Transport',
+    'lrt': 'Transport',
+    'ktm': 'Transport',
+    'taxi': 'Transport',
+    'bus': 'Transport',
+    'train': 'Transport',
+    'parking': 'Transport',
+    'toll': 'Transport',
+    'tol': 'Transport',
+    'pharmacy': 'Healthcare',
+    'farmasi': 'Healthcare',
+    'clinic': 'Healthcare',
+    'klinik': 'Healthcare',
+    'hospital': 'Healthcare',
+    'dental': 'Healthcare',
+    'dentist': 'Healthcare',
+    'watsons': 'Healthcare',
+    'guardian': 'Healthcare',
+    'caring pharmacy': 'Healthcare',
+    'medicine': 'Healthcare',
+    'ubat': 'Healthcare',
+    'tgv': 'Entertainment',
+    'gsc': 'Entertainment',
+    'karaoke': 'Entertainment',
+    'bowling': 'Entertainment',
+    'arcade': 'Entertainment',
+    'concert': 'Entertainment',
     'meal': 'Food',
     'toy': 'Entertainment',
     'toys': 'Entertainment',
@@ -30,20 +103,14 @@ class ExpenseCategorisation {
   };
 
   String suggest(String description) {
-    final text = description.toLowerCase();
-    for (final keyword in keywords) {
-      if (text.contains(keyword.word.toLowerCase())) return keyword.category;
-    }
-    for (final entry in _commonKeywords.entries) {
-      if (text.contains(entry.key)) return entry.value;
-    }
-    return 'Others';
+    return suggestReceipt([description]);
   }
 
   String suggestReceipt(List<String> lines) {
     // Check the merchant header first, then item lines. Match whole words so
     // a payment word such as “cash” cannot match a shorter merchant keyword.
     final rules = {
+      for (final k in keywords) k.word.toLowerCase(): k.category,
       ..._commonKeywords,
       'coat': 'Shopping',
       'dress': 'Shopping',
@@ -58,12 +125,14 @@ class ExpenseCategorisation {
       'chicken': 'Food',
       'toast': 'Food',
       'earl grey': 'Food',
-      for (final k in keywords) k.word.toLowerCase(): k.category,
     };
+    // Prefer specific merchant phrases over short words on the same line.
+    final orderedRules = rules.entries.toList()
+      ..sort((a, b) => b.key.length.compareTo(a.key.length));
     for (final line in lines) {
       final words = line.toLowerCase().split(RegExp('[^a-z0-9]+'));
       final phrase = ' ${words.join(' ')} ';
-      for (final rule in rules.entries) {
+      for (final rule in orderedRules) {
         final keyword = rule.key.replaceAll(RegExp('[^a-z0-9]+'), ' ').trim();
         if (keyword.isEmpty) continue;
         // OCR sometimes joins a merchant or product to the following noun.

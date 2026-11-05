@@ -232,12 +232,19 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
+                      const Text('Expense category'),
+                      const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         key: ValueKey((photo, category)),
                         initialValue: category,
                         decoration: const InputDecoration(
-                          labelText: 'Expense category',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
                         ),
+                        isExpanded: true,
                         items: expenseCategories
                             .map(
                               (c) => DropdownMenuItem(value: c, child: Text(c)),
@@ -247,13 +254,21 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                             ? null
                             : (v) => setState(() => category = v!),
                       ),
-                      if (printedTotal != null)
+                      if (printedTotal != null) ...[
+                        const SizedBox(height: 20),
+                        const Text('Receipt currency'),
+                        const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           key: ValueKey((photo, currency)),
                           initialValue: currency,
                           decoration: const InputDecoration(
-                            labelText: 'Receipt currency',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
                           ),
+                          isExpanded: true,
                           items: receiptCurrencies
                               .map(
                                 (c) =>
@@ -266,31 +281,46 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                                   if (value != null) convert(value);
                                 },
                         ),
+                      ],
                       if (rateFailed)
                         TextButton(
                           onPressed: busy ? null : () => convert(currency!),
                           child: const Text('Retry conversion'),
                         ),
+                      const SizedBox(height: 20),
+                      const Text('Expense amount in RM'),
+                      const SizedBox(height: 8),
                       TextFormField(
                         enabled: !busy,
                         controller: amount,
                         decoration: const InputDecoration(
-                          labelText: 'Expense amount in RM',
                           prefixText: 'RM ',
                           border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          errorMaxLines: 3,
                         ),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
                         validator: (v) => AccountSetup.validateMoney(v),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 20),
+                      const Text('Description'),
+                      const SizedBox(height: 8),
                       TextFormField(
                         enabled: !busy,
                         controller: description,
                         maxLength: 500,
                         decoration: const InputDecoration(
-                          labelText: 'Description',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          errorMaxLines: 3,
                         ),
                         validator: (v) => (v ?? '').trim().isEmpty
                             ? 'Enter a description'
