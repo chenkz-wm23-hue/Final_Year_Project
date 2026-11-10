@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/expense_store.dart';
 import '../widgets/async_button.dart';
+import '../../business_logic/category_suggestion.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final bool income;
@@ -17,6 +18,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   late DateTime date;
   late String category;
   bool manualCategory = false;
+  CategorySuggestion? suggestion;
   @override
   void initState() {
     super.initState();
@@ -61,7 +63,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     : null,
                 onChanged: (v) {
                   if (!widget.income && !manualCategory) {
-                    setState(() => category = store.suggestCategory(v));
+                    setState(() {
+                      suggestion = store.categorySuggestion(v);
+                      category = suggestion!.category;
+                    });
                   }
                 },
               ),
@@ -120,14 +125,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Suggest category from description'),
-                  subtitle: const Text(
-                    'Matches common merchant names and keywords.',
+                  subtitle: Text(
+                    manualCategory
+                        ? 'Your selected category will be saved.'
+                        : suggestion?.guidance ?? 'Suggests a category using ML, with keyword fallback.',
                   ),
                   value: !manualCategory,
                   onChanged: (v) => setState(() {
                     manualCategory = !v;
                     if (v) {
-                      category = store.suggestCategory(description.text);
+                      suggestion = store.categorySuggestion(description.text);
+                      category = suggestion!.category;
                     }
                   }),
                 ),

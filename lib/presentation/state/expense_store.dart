@@ -10,6 +10,7 @@ import '../../business_logic/transaction_management.dart';
 import '../../business_logic/budget_management.dart';
 import '../../business_logic/dashboard_calculation.dart';
 import '../../business_logic/expense_categorisation.dart';
+import '../../business_logic/category_suggestion.dart';
 import '../../business_logic/profile_management.dart';
 import '../../business_logic/rule_based_recommendation.dart';
 import '../../business_logic/rule_based_risk_evaluator.dart';
@@ -120,10 +121,15 @@ class ExpenseStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  String suggestCategory(String text) =>
-      ExpenseCategorisation(repository.keywords).suggest(text);
+  HybridExpenseCategorisation get categorisation =>
+      HybridExpenseCategorisation(ExpenseCategorisation(repository.keywords));
+  CategorySuggestion categorySuggestion(String text) =>
+      categorisation.suggest(text);
+  CategorySuggestion receiptCategorySuggestion(List<String> lines) =>
+      categorisation.suggestReceipt(lines);
+  String suggestCategory(String text) => categorySuggestion(text).category;
   String suggestReceiptCategory(List<String> lines) =>
-      ExpenseCategorisation(repository.keywords).suggestReceipt(lines);
+      receiptCategorySuggestion(lines).category;
 }
 
 class ExpenseScope extends InheritedNotifier<ExpenseStore> {

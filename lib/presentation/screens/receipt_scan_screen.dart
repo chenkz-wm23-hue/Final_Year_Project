@@ -27,6 +27,7 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
   bool rateFailed = false;
   bool busy = false;
   String category = 'Others';
+  String categoryGuidance = 'Check or change the category before saving.';
   late DateTime date = DateTime.now();
   bool get supported =>
       !kIsWeb &&
@@ -74,16 +75,20 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
         amount.clear();
         description.text = 'Receipt expense';
         category = 'Others';
+        categoryGuidance = 'Check or change the category before saving.';
         date = DateTime.now();
       });
       final receipt = await readReceipt(file.path);
       final total = receipt.total;
       if (!mounted) return;
       final suggested = ExpenseScope.of(context)
-          .suggestReceiptCategory(receipt.lines);
+          .receiptCategorySuggestion(receipt.lines);
       setState(() {
         printedTotal = total;
-        category = expenseCategories.contains(suggested) ? suggested : 'Others';
+        category = expenseCategories.contains(suggested.category)
+            ? suggested.category
+            : 'Others';
+        categoryGuidance = suggested.guidance;
         message = 'No clear total found. Enter the RM amount or scan again.';
       });
       if (total != null) await convert(receipt.foreignCurrency ?? 'MYR');
@@ -252,8 +257,14 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                             .toList(),
                         onChanged: busy
                             ? null
-                            : (v) => setState(() => category = v!),
+                            : (v) => setState(() {
+                                category = v!;
+                                categoryGuidance =
+                                    'Your selected category will be saved.';
+                              }),
                       ),
+                      const SizedBox(height: 8),
+                      Text(categoryGuidance),
                       if (printedTotal != null) ...[
                         const SizedBox(height: 20),
                         const Text('Receipt currency'),
