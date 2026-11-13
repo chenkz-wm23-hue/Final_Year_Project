@@ -26,6 +26,7 @@ class ExpenseStore extends ChangeNotifier {
   ExpenseStore({ExpenseRepository? repository})
     : repository = repository ?? InMemoryExpenseRepository();
   final ExpenseRepository repository;
+  int dataRevision = 0;
   bool _disposed = false;
   @override
   void dispose() {
@@ -84,6 +85,7 @@ class ExpenseStore extends ChangeNotifier {
 
   Future<void> setBudget(double value) async {
     await budgets.save(month, value);
+    dataRevision++;
     notifyListeners();
   }
 
@@ -103,11 +105,13 @@ class ExpenseStore extends ChangeNotifier {
       category: category,
       income: income,
     );
+    dataRevision++;
     notifyListeners();
   }
 
   Future<void> delete(int id) async {
     await transactions.delete(id);
+    dataRevision++;
     notifyListeners();
   }
 

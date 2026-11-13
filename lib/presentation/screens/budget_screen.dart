@@ -10,6 +10,7 @@ import '../widgets/category_summary.dart';
 import '../widgets/async_button.dart';
 import '../widgets/saving_goal_dialog.dart';
 import '../widgets/finance_charts.dart';
+import '../widgets/budget_status_notice.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -57,13 +58,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
             decoration: const InputDecoration(
               labelText: 'Monthly limit',
               prefixText: 'RM ',
+              errorMaxLines: 3,
             ),
-            validator: (v) {
-              final n = double.tryParse(v ?? '');
-              return n == null || !n.isFinite || n <= 0
-                  ? 'Enter a positive budget'
-                  : null;
-            },
+            validator: (v) => AccountSetup.validateMoney(v),
           ),
         ),
         actions: [
@@ -121,24 +118,19 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Spent: ${money(store.expense)}'),
-              Text(
-                '${store.remaining >= 0 ? 'Remaining' : 'Over budget'}: ${money(store.remaining.abs())}',
-              ),
+              BudgetChart(spent: store.expense, budget: store.budget),
               const SizedBox(height: 16),
-              LinearProgressIndicator(
-                value: store.ratio.clamp(0, 1).toDouble(),
-                minHeight: 9,
-                color: store.ratio >= 1 ? Colors.red : Colors.teal,
+              BudgetStatusNotice(spent: store.expense, budget: store.budget),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => editBudget(store),
+                  child: const Text('Update Budget'),
+                ),
               ),
-              const SizedBox(height: 10),
-              Text('${(store.ratio * 100).toStringAsFixed(0)}% used'),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-        AppCard(
-          child: BudgetChart(spent: store.expense, budget: store.budget),
         ),
         const SizedBox(height: 16),
         if (goalName != null && goalAmount != null && monthlySaving != null)
@@ -178,20 +170,6 @@ class _BudgetScreenState extends State<BudgetScreen> {
           ),
         if (AuthScope.maybeOf(context)?.client.auth.currentUser != null)
           const SizedBox(height: 12),
-        FilledButton(
-          onPressed: () => editBudget(store),
-          child: const Text('Update Budget'),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          store.ratio > 1
-              ? 'Budget exceeded. Review your spending.'
-              : store.ratio == 1
-              ? 'You have used your full budget.'
-              : store.ratio >= .8
-              ? 'You are approaching your budget limit.'
-              : 'Your spending is within budget.',
-        ),
         const SizedBox(height: 24),
         const Text(
           'Category breakdown',

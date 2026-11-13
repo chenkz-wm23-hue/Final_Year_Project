@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../state/expense_store.dart';
 import '../widgets/month_selector.dart';
+import '../widgets/finance_banner.dart';
 import '../widgets/live_transaction_tile.dart';
 import 'transaction_form_screen.dart';
+import 'income_history_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
   final bool? income;
@@ -41,9 +43,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         if (widget.income != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              'Total ${widget.income! ? 'income' : 'expenses'}: ${money(widget.income! ? store.income : store.expense)}',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            child: FinanceBanner(
+              title: widget.income! ? 'Monthly income' : 'Monthly expenses',
+              value: money(widget.income! ? store.income : store.expense),
+              subtitle: store.monthLabel,
             ),
           ),
         TextField(
@@ -78,6 +81,15 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             ),
             icon: const Icon(Icons.add),
             label: Text('Add ${widget.income! ? 'Income' : 'Expense'}'),
+          ),
+        if (widget.income == true)
+          TextButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const IncomeHistoryScreen()),
+            ),
+            icon: const Icon(Icons.history),
+            label: const Text('View income history'),
           ),
         const SizedBox(height: 20),
         if (entries.isEmpty)

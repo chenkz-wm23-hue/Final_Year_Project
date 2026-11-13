@@ -11,7 +11,7 @@ import 'presentation/state/auth_scope.dart';
 import 'presentation/state/expense_store.dart';
 import 'presentation/app_shell.dart';
 import 'presentation/screens/splash_screen.dart';
-import 'presentation/theme/app_colors.dart';
+import 'presentation/theme/app_theme.dart';
 import 'presentation/widgets/async_button.dart';
 
 class ConnectedApp extends StatefulWidget {
@@ -120,11 +120,7 @@ class _ConnectedAppState extends State<ConnectedApp>
     scaffoldMessengerKey: messenger,
     debugShowCheckedModeBanner: false,
     title: 'Smart Expense Tracker',
-    theme: ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: appCanvas,
-      colorScheme: ColorScheme.fromSeed(seedColor: appIndigo),
-    ),
+    theme: buildAppTheme(),
     builder: (context, child) => AuthScope(
       auth: auth,
       child: store == null

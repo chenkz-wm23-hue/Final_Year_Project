@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../state/expense_store.dart';
 import '../state/auth_scope.dart';
 import '../widgets/async_button.dart';
+import '../widgets/finance_banner.dart';
 import 'edit_profile_screen.dart';
 import 'login_screen.dart';
 
@@ -14,16 +15,11 @@ class ProfileScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
       children: [
-        const Center(
-          child: CircleAvatar(radius: 45, child: Icon(Icons.person, size: 48)),
+        FinanceBanner(
+          title: 'Your profile',
+          value: store.name,
+          subtitle: store.email,
         ),
-        const SizedBox(height: 16),
-        Text(
-          store.name,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        Text(store.email, textAlign: TextAlign.center),
         const SizedBox(height: 24),
         ListTile(
           leading: const Icon(Icons.edit_outlined),

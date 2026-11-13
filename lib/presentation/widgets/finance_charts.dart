@@ -65,7 +65,11 @@ class BudgetChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final ratio = budget > 0 ? spent / budget : 0.0;
     final over = spent > budget;
-    final color = over ? Theme.of(context).colorScheme.error : Colors.indigo;
+    final color = over
+        ? Theme.of(context).colorScheme.error
+        : ratio >= .8
+        ? Colors.amber.shade800
+        : Colors.indigo;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -101,7 +105,7 @@ class BudgetChart extends StatelessWidget {
         const SizedBox(height: 18),
         _legend('Spent', money(spent), color),
         _legend(
-          'Available budget',
+          'Remaining',
           money(math.max(0, budget - spent)),
           const Color(0xffdedcf4),
         ),

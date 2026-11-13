@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:final_year_project/presentation/theme/app_theme.dart';
+import 'package:final_year_project/presentation/screens/income_history_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:final_year_project/presentation/state/expense_store.dart';
 import 'package:final_year_project/presentation/screens/login_screen.dart';
@@ -26,6 +28,7 @@ void main() {
     'register': const RegisterScreen(),
     'dashboard': const Scaffold(body: DashboardScreen()),
     'transactions': const Scaffold(body: TransactionListScreen()),
+    'income history': const IncomeHistoryScreen(),
     'income': const Scaffold(body: TransactionListScreen(income: true)),
     'expense': const Scaffold(body: TransactionListScreen(income: false)),
     'add expense': const TransactionFormScreen(income: false),
@@ -60,6 +63,7 @@ void main() {
           );
           await tester.pumpWidget(
             MaterialApp(
+              theme: buildAppTheme(),
               builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(context)
                     .copyWith(textScaler: TextScaler.linear(scale)),
@@ -101,6 +105,7 @@ void main() {
     addTearDown(store.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        theme: buildAppTheme(),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(2)),
@@ -159,6 +164,7 @@ void main() {
       addTearDown(store.dispose);
       await tester.pumpWidget(
         MaterialApp(
+          theme: buildAppTheme(),
           builder: (_, child) => ExpenseScope(store: store, child: child!),
           home: item.$1,
         ),

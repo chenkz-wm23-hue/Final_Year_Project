@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'connected_app.dart';
 
-import 'presentation/theme/app_colors.dart';
+import 'presentation/theme/app_theme.dart';
 import 'presentation/screens/splash_screen.dart';
 import 'presentation/state/expense_store.dart';
 
@@ -30,12 +30,7 @@ class _SmartExpenseAppState extends State<SmartExpenseApp> {
           debugShowCheckedModeBanner: false,
           builder: (context, child) =>
               ExpenseScope(store: store, child: child!),
-          theme: ThemeData(
-            useMaterial3: true,
-            scaffoldBackgroundColor: appCanvas,
-            colorScheme: ColorScheme.fromSeed(seedColor: appIndigo),
-            fontFamily: 'Arial',
-          ),
+          theme: buildAppTheme(),
           home: const SplashScreen(),
         );
 }

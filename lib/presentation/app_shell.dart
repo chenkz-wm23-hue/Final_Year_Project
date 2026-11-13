@@ -129,7 +129,11 @@ class _AppShellState extends State<AppShell> {
           label: 'Expense',
         ),
         NavigationDestination(
-          icon: Icon(Icons.document_scanner_outlined),
+          icon: CircleAvatar(
+            radius: 24,
+            backgroundColor: appIndigo,
+            child: Icon(Icons.photo_camera_outlined, color: Colors.white),
+          ),
           label: 'Scan',
           tooltip: 'Scan receipt',
         ),

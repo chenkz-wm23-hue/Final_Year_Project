@@ -7,6 +7,7 @@ import '../../business_logic/receipt_reader.dart';
 import '../../business_logic/receipt_exchange.dart';
 import '../state/expense_store.dart';
 import '../widgets/async_button.dart';
+import '../widgets/app_card.dart';
 
 class ReceiptScanScreen extends StatefulWidget {
   const ReceiptScanScreen({super.key, this.picker});
@@ -88,7 +89,9 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
         category = expenseCategories.contains(suggested.category)
             ? suggested.category
             : 'Others';
-        categoryGuidance = suggested.guidance;
+        categoryGuidance = category == 'Others'
+            ? 'No clear match. Please choose a category.'
+            : 'Suggested category - check or change before saving.';
         message = 'No clear total found. Enter the RM amount or scan again.';
       });
       if (total != null) await convert(receipt.foreignCurrency ?? 'MYR');
@@ -179,7 +182,9 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
   Widget build(BuildContext context) => PopScope(
     canPop: !busy,
     child: Scaffold(
-      appBar: AppBar(title: const Text('Scan receipt')),
+      appBar: AppBar(
+        title: Text(photo == null ? 'Scan receipt' : 'Receipt summary'),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -198,7 +203,7 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                   FilledButton.icon(
                     onPressed: busy ? null : () => scan(ImageSource.camera),
                     icon: const Icon(Icons.document_scanner_outlined),
-                    label: Text(photo == null ? 'Take photo' : 'Scan again'),
+                    label: const Text('Take photo'),
                   ),
                   OutlinedButton.icon(
                     onPressed: busy ? null : () => scan(ImageSource.gallery),
@@ -215,12 +220,50 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
               if (photo != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Image.memory(
-                    photo!,
-                    height: 220,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) =>
-                        const Text('Preview unavailable'),
+                  child: AppCard(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            photo!,
+                            width: 80,
+                            height: 112,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const SizedBox(
+                              width: 80,
+                              child: Icon(Icons.receipt_long),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                busy
+                                    ? Icons.hourglass_top
+                                    : Icons.receipt_long_outlined,
+                                color: Colors.indigo,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                busy
+                                    ? 'Reading receipt...'
+                                    : 'Review your receipt',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Check the amount and details before saving.',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               if (message != null)
@@ -232,11 +275,26 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 16),
-                      Text(
-                        'Receipt summary',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      const Text('Expense amount in RM'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        enabled: !busy,
+                        controller: amount,
+                        decoration: const InputDecoration(
+                          prefixText: 'RM ',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          errorMaxLines: 3,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: (v) => AccountSetup.validateMoney(v),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 20),
                       const Text('Expense category'),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
@@ -264,7 +322,13 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                               }),
                       ),
                       const SizedBox(height: 8),
-                      Text(categoryGuidance),
+                      Text(
+                        categoryGuidance,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
                       if (printedTotal != null) ...[
                         const SizedBox(height: 20),
                         const Text('Receipt currency'),
@@ -298,26 +362,6 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                           onPressed: busy ? null : () => convert(currency!),
                           child: const Text('Retry conversion'),
                         ),
-                      const SizedBox(height: 20),
-                      const Text('Expense amount in RM'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        enabled: !busy,
-                        controller: amount,
-                        decoration: const InputDecoration(
-                          prefixText: 'RM ',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          errorMaxLines: 3,
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        validator: (v) => AccountSetup.validateMoney(v),
-                      ),
                       const SizedBox(height: 20),
                       const Text('Description'),
                       const SizedBox(height: 8),
@@ -361,6 +405,12 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                           label: 'Add expense',
                           onPressed: save,
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: busy ? null : () => scan(ImageSource.camera),
+                        icon: const Icon(Icons.photo_camera_outlined),
+                        label: const Text('Scan again'),
                       ),
                       TextButton(
                         onPressed: busy ? null : () => Navigator.pop(context),

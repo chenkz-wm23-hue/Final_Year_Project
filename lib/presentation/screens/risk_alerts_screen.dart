@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../state/expense_store.dart';
 import '../widgets/month_selector.dart';
 import '../widgets/insight_card.dart';
+import '../widgets/budget_status_notice.dart';
 import '../widgets/insight_load_error.dart';
 
 class RiskAlertsScreen extends StatelessWidget {
@@ -18,6 +19,8 @@ class RiskAlertsScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
         children: [
           const MonthSelector(),
+          const SizedBox(height: 16),
+          BudgetStatusNotice(spent: store.expense, budget: store.budget),
           const SizedBox(height: 16),
           if (store.insightsUnavailable) const InsightLoadError(),
           if (!store.insightsUnavailable && alerts.isEmpty)
@@ -37,7 +40,7 @@ class RiskAlertsScreen extends StatelessWidget {
               icon: Icons.warning_amber_rounded,
               color: a.severity == RiskSeverity.high
                   ? Colors.red
-                  : Colors.orange,
+                  : Colors.amber.shade800,
               title: a.title,
               description: a.description,
               label: a.label,
