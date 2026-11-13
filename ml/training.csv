@@ -1,0 +1,145 @@
+category,text
+Food,kfc fried chicken meal
+Food,mcdonalds burger fries lunch
+Food,restoran nasi ayam dinner
+Food,kopitiam coffee toast breakfast
+Food,pizza hut pizza delivery
+Food,domino pizza takeaway
+Food,subway sandwich lunch
+Food,starbucks coffee cake
+Food,tealive milk tea drink
+Food,zus coffee latte
+Food,grabfood meal delivery
+Food,foodpanda restaurant order
+Food,bakery fresh pastries breakfast
+Food,kedai makan nasi lemak
+Food,roti canai teh tarik
+Food,mee goreng makan tengah hari
+Food,sushi ramen restaurant
+Food,seafood dinner grilled fish
+Food,western cafe pasta supper
+Food,ayam penyet rice lunch
+Food,dim sum breakfast restaurant
+Food,steak house dinner meal
+Food,ice cream dessert waffle
+Food,canteen cooked food lunch
+Shopping,jaya grocer groceries milk bread
+Shopping,tesco supermarket vegetables chicken
+Shopping,mydin hypermarket groceries rice
+Shopping,aeon supermarket household supplies
+Shopping,lotus grocery shopping eggs
+Shopping,99 speedmart mini market groceries
+Shopping,village grocer fresh produce
+Shopping,pasar raya barang dapur
+Shopping,pasar mini sayur buah
+Shopping,shopee online shopping clothes
+Shopping,lazada electronics headphones
+Shopping,uniqlo shirt trousers clothes
+Shopping,mr diy hardware tools
+Shopping,department store shoes handbag
+Shopping,boutique dress coat fashion
+Shopping,bookshop stationery notebook
+Shopping,furniture sofa table purchase
+Shopping,computer shop keyboard mouse
+Shopping,supermarket cleaning detergent toiletries
+Shopping,clothing store jeans jacket
+Shopping,leather crossbody bag accessories
+Shopping,kasut baju seluar kedai
+Shopping,home appliance kettle purchase
+Shopping,groceries cereal fruit yoghurt
+Fuel,petronas petrol ron95 refill
+Fuel,shell fuel diesel pump
+Fuel,caltex petrol station ron97
+Fuel,petron fuel tank refill
+Fuel,bhpetrol diesel purchase
+Fuel,bhp petrol station fuel
+Fuel,isi minyak petrol kereta
+Fuel,minyak diesel lori
+Fuel,ron95 petrol pump litres
+Fuel,ron97 fuel refill car
+Fuel,unleaded petrol gasoline
+Fuel,vehicle fuel tank filling
+Fuel,motorcycle petrol refill
+Fuel,stesen minyak petrol
+Fuel,car diesel refuelling
+Fuel,petrol pump fuel purchase
+Fuel,gasoline filling station
+Fuel,isi minyak motosikal ron95
+Fuel,refuel diesel tank
+Fuel,premium unleaded fuel litres
+Fuel,shell v power petrol
+Fuel,petronas primax fuel
+Fuel,caltex techron gasoline
+Fuel,petron blaze petrol
+Transport,grab ride to office
+Transport,rapidkl bus ticket fare
+Transport,mrt train journey ticket
+Transport,lrt commuter fare
+Transport,ktm train transport ticket
+Transport,taxi airport ride fare
+Transport,parking car hourly fee
+Transport,toll highway road charge
+Transport,tol lebuh raya perjalanan
+Transport,bas tambang tiket perjalanan
+Transport,ets railway travel ticket
+Transport,monorail station fare
+Transport,airline flight ticket travel
+Transport,ferry boat passenger ticket
+Transport,car park parking payment
+Transport,bus express ticket travel
+Transport,ride hailing journey fare
+Transport,airport transfer shuttle fare
+Transport,train pass monthly commute
+Transport,public transport journey
+Transport,teksi tambang perjalanan
+Transport,parking meter fee
+Transport,highway toll plaza payment
+Transport,commuter rail ticket fare
+Healthcare,watsons medicine vitamins
+Healthcare,guardian pharmacy prescription
+Healthcare,caring pharmacy tablets
+Healthcare,farmasi ubat demam
+Healthcare,klinik konsultasi doktor
+Healthcare,clinic doctor consultation
+Healthcare,hospital medical treatment
+Healthcare,dental dentist checkup
+Healthcare,pergigian rawatan gigi
+Healthcare,pharmacy cough medicine
+Healthcare,prescription antibiotics tablets
+Healthcare,medical blood test laboratory
+Healthcare,physiotherapy rehabilitation treatment
+Healthcare,eye clinic examination
+Healthcare,vaccination doctor appointment
+Healthcare,health screening hospital
+Healthcare,ubat batuk vitamin farmasi
+Healthcare,dentist tooth filling
+Healthcare,medical consultation fee
+Healthcare,bandages first aid pharmacy
+Healthcare,clinic fever treatment
+Healthcare,pain relief medication
+Healthcare,doctor specialist appointment
+Healthcare,dental scaling cleaning
+Entertainment,gsc cinema movie ticket
+Entertainment,tgv film screening tickets
+Entertainment,netflix streaming subscription
+Entertainment,spotify music subscription
+Entertainment,karaoke singing session
+Entertainment,bowling alley game
+Entertainment,arcade video games
+Entertainment,concert live music tickets
+Entertainment,theme park admission rides
+Entertainment,toys game play set
+Entertainment,cinema popcorn movie night
+Entertainment,video game digital purchase
+Entertainment,amusement park entry ticket
+Entertainment,theatre performance show
+Entertainment,comedy show admission
+Entertainment,wayang tiket filem
+Entertainment,konsert muzik tiket
+Entertainment,board game entertainment
+Entertainment,disney streaming subscription
+Entertainment,playstation game purchase
+Entertainment,escape room activity
+Entertainment,museum exhibition admission
+Entertainment,water park leisure tickets
+Entertainment,zoo attraction admission
