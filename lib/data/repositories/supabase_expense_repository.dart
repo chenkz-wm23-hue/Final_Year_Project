@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'receipt_repository.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'expense_repository.dart';
@@ -12,10 +16,67 @@ import '../models/keyword.dart';
 
 /// One repository per authenticated account. Cache changes only after server success.
 class SupabaseExpenseRepository
-    implements ExpenseRepository, InsightRepository {
+    implements ExpenseRepository, InsightRepository, ReceiptRepository {
   SupabaseExpenseRepository(this.client, this.userId);
   final SupabaseClient client;
   final String userId;
+  static const receiptBucket = 'expense-receipts';
+  @override
+  Future<String> uploadReceipt(String key, Uint8List png) async {
+    _checkSession();
+    if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(key) ||
+        png.isEmpty ||
+        png.length > 15728640) {
+      throw ArgumentError('Invalid receipt image');
+    }
+    final path = '$userId/$key.png';
+    await client.storage
+        .from(receiptBucket)
+        .uploadBinary(
+          path,
+          png,
+          fileOptions: const FileOptions(
+            contentType: 'image/png',
+            upsert: true,
+          ),
+        )
+        .timeout(const Duration(seconds: 30));
+    _checkSession();
+    return path;
+  }
+
+  @override
+  Future<Uint8List> downloadReceipt(String path) async {
+    _checkSession();
+    if (!path.startsWith('$userId/')) throw StateError('Receipt access denied');
+    final bytes = await client.storage
+        .from(receiptBucket)
+        .download(path)
+        .timeout(const Duration(seconds: 30));
+    _checkSession();
+    return bytes;
+  }
+
+  @override
+  Future<List<TransactionEntry>> receiptCandidates(
+    DateTime date,
+    double amount,
+  ) async {
+    _checkSession();
+    final rows = await client
+        .from('transactions')
+        .select()
+        .eq('user_id', userId)
+        .eq('transaction_type', 'expense')
+        .eq('transaction_date', _date(date))
+        .gte('amount', amount - .011)
+        .lte('amount', amount + .011)
+        .limit(100)
+        .timeout(const Duration(seconds: 20));
+    _checkSession();
+    return rows.map(_transaction).toList();
+  }
+
   List<TransactionEntry> _entries = [];
   List<MonthlyBudget> _budgets = [];
   List<Map<String, dynamic>> _categoryRows = [];
@@ -143,6 +204,8 @@ class SupabaseExpenseRepository
     amount: (row['amount'] as num).toDouble(),
     date: DateTime.parse(row['transaction_date'] as String),
     income: row['transaction_type'] == 'income',
+    receiptPath: row['receipt_path'] as String?,
+    merchant: row['receipt_merchant'] as String?,
   );
   @override
   List<TransactionEntry> get transactions => List.unmodifiable(_entries);
@@ -163,10 +226,18 @@ class SupabaseExpenseRepository
       'transaction_date': _date(entry.date),
       'transaction_type': type,
       'category_id': category['id'],
+      if (entry.receiptPath != null) 'receipt_path': entry.receiptPath,
+      if (entry.merchant != null) 'receipt_merchant': entry.merchant,
     };
     final Map<String, dynamic> row;
     if (entry.id == 0) {
-      row = await client.from('transactions').insert(values).select().single();
+      row = entry.receiptPath == null
+          ? await client.from('transactions').insert(values).select().single()
+          : await client
+                .from('transactions')
+                .upsert(values, onConflict: 'user_id,receipt_path')
+                .select()
+                .single();
     } else {
       row = await client
           .from('transactions')
@@ -185,6 +256,10 @@ class SupabaseExpenseRepository
   @override
   Future<void> deleteTransaction(int id) async {
     _checkSession();
+    final receiptPath = _entries
+        .where((entry) => entry.id == id)
+        .firstOrNull
+        ?.receiptPath;
     await client
         .from('transactions')
         .delete()
@@ -194,6 +269,17 @@ class SupabaseExpenseRepository
         .single();
     _checkSession();
     _entries = _entries.where((e) => e.id != id).toList();
+    if (receiptPath != null) {
+      try {
+        await client.storage
+            .from(receiptBucket)
+            .remove([receiptPath])
+            .timeout(const Duration(seconds: 15));
+      } catch (_) {
+        // The expense deletion is already committed. Do not report it as failed.
+        // A failed cleanup leaves a private orphan, never a public receipt.
+      }
+    }
     await refreshInsights();
   }
 

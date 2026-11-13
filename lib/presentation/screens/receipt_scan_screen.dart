@@ -1,3 +1,10 @@
+import 'dart:math';
+import 'dart:ui' as ui;
+
+import '../../business_logic/receipt_duplicates.dart';
+import '../../data/repositories/receipt_repository.dart';
+import '../widgets/duplicate_receipt_dialog.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,6 +26,9 @@ class ReceiptScanScreen extends StatefulWidget {
 class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
   late final picker = widget.picker ?? ImagePicker();
   final amount = TextEditingController();
+  final merchant = TextEditingController();
+  String? receiptPath;
+  String receiptKey = '';
   final description = TextEditingController(text: 'Receipt expense');
   final form = GlobalKey<FormState>();
   Uint8List? photo;
@@ -65,10 +75,39 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
         );
       }
       if (file == null || !mounted) return;
-      final bytes = await file.readAsBytes();
+      final rawBytes = await file.readAsBytes();
+      if (rawBytes.length > 20971520) {
+        throw const FormatException('Image too large');
+      }
+      final codec = await ui.instantiateImageCodec(
+        rawBytes,
+        targetWidth: 1600,
+        allowUpscaling: false,
+      );
+      late Uint8List bytes;
+      try {
+        final frame = await codec.getNextFrame();
+        try {
+          final png = await frame.image.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
+          if (png == null || png.lengthInBytes > 15728640) {
+            throw const FormatException('Image too large');
+          }
+          bytes = png.buffer.asUint8List(png.offsetInBytes, png.lengthInBytes);
+        } finally {
+          frame.image.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
       if (!mounted) return;
       setState(() {
         photo = bytes;
+        receiptPath = null;
+        receiptKey =
+            '${DateTime.now().microsecondsSinceEpoch}_${Random.secure().nextInt(1 << 32)}';
+        merchant.clear();
         printedTotal = null;
         currency = null;
         rateFailed = false;
@@ -86,6 +125,7 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
           .receiptCategorySuggestion(receipt.lines);
       setState(() {
         printedTotal = total;
+        merchant.text = suggestReceiptMerchant(receipt.lines);
         category = expenseCategories.contains(suggested.category)
             ? suggested.category
             : 'Others';
@@ -154,12 +194,37 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
     if (busy || !form.currentState!.validate()) return;
     setState(() => busy = true);
     try {
-      await ExpenseScope.of(context).save(
+      final store = ExpenseScope.of(context);
+      final repo = store.repository;
+      if (repo is! ReceiptRepository) {
+        throw StateError('Receipt storage unavailable');
+      }
+      final receiptRepo = repo as ReceiptRepository;
+      final value = double.parse(amount.text.trim());
+      final candidates = await receiptRepo.receiptCandidates(date, value);
+      if (!mounted) return;
+      final matches = possibleReceiptDuplicates(
+        candidates,
+        merchant: merchant.text.trim(),
+        date: date,
+        amount: value,
+        receiptPath: receiptPath,
+      );
+      if (matches.isNotEmpty &&
+          !await confirmDuplicateReceipt(context, matches)) {
+        return;
+      }
+      if (!mounted) return;
+      receiptPath = await receiptRepo.uploadReceipt(receiptKey, photo!);
+      if (!mounted) return;
+      await store.save(
         description: description.text.trim(),
         amount: double.parse(amount.text.trim()),
         date: date,
         category: category,
         income: false,
+        receiptPath: receiptPath,
+        merchant: merchant.text.trim(),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -174,6 +239,7 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
   @override
   void dispose() {
     amount.dispose();
+    merchant.dispose();
     description.dispose();
     super.dispose();
   }
@@ -362,6 +428,19 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
                           onPressed: busy ? null : () => convert(currency!),
                           child: const Text('Retry conversion'),
                         ),
+                      const SizedBox(height: 20),
+                      const Text('Merchant / shop name'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: merchant,
+                        enabled: !busy,
+                        maxLength: 150,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          helperText: 'Check the shop name to help detect duplicate receipts.',
+                          helperMaxLines: 3,
+                        ),
+                      ),
                       const SizedBox(height: 20),
                       const Text('Description'),
                       const SizedBox(height: 8),

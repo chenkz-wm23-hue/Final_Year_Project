@@ -1,3 +1,5 @@
+import 'receipt_viewer_screen.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../business_logic/receipt_exchange.dart';
@@ -293,6 +295,18 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                         category = suggestion!.category;
                       }
                     }),
+                  ),
+                if (widget.entry?.receiptPath != null)
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ReceiptViewerScreen(entry: widget.entry!),
+                      ),
+                    ),
+                    icon: const Icon(Icons.receipt_long_outlined),
+                    label: const Text('View receipt'),
                   ),
                 const SizedBox(height: 24),
                 AsyncButton(

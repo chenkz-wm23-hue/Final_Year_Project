@@ -96,6 +96,8 @@ class ExpenseStore extends ChangeNotifier {
     required DateTime date,
     required String category,
     required bool income,
+    String? receiptPath,
+    String? merchant,
   }) async {
     await transactions.save(
       id: id,
@@ -104,6 +106,8 @@ class ExpenseStore extends ChangeNotifier {
       date: date,
       category: category,
       income: income,
+      receiptPath: receiptPath,
+      merchant: merchant,
     );
     dataRevision++;
     notifyListeners();

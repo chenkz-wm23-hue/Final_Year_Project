@@ -194,6 +194,50 @@ void main() {
   });
   tearDown(() async => client.dispose());
 
+  test(
+    'receipt metadata survives server reload and normal expense edits',
+    () async {
+      await auth.signIn('student@example.com', 'password123');
+      final repo = SupabaseExpenseRepository(client, uid);
+      await repo.load();
+      final store = ExpenseStore(repository: repo);
+      final path = '$uid/receipt-test.png';
+      await store.save(
+        description: 'Receipt',
+        amount: 15.88,
+        date: DateTime(2026, 11, 13),
+        category: 'Food',
+        income: false,
+        receiptPath: path,
+        merchant: 'KFC',
+      );
+      expect(
+        requests
+            .where(
+              (r) => r.url.path.endsWith('/transactions') && r.method == 'POST',
+            )
+            .last
+            .url
+            .queryParameters['on_conflict'],
+        'user_id,receipt_path',
+      );
+      await repo.load();
+      expect(store.entries.single.receiptPath, path);
+      await store.save(
+        id: store.entries.single.id,
+        description: 'Edited',
+        amount: 16,
+        date: DateTime(2026, 11, 13),
+        category: 'Food',
+        income: false,
+      );
+      await repo.load();
+      expect(store.entries.single.receiptPath, path);
+      expect(store.entries.single.merchant, 'KFC');
+      store.dispose();
+    },
+  );
+
   testWidgets(
     'insight screens display persisted results and retry read failures',
     (tester) async {
@@ -505,7 +549,9 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Laptop'), findsOneWidget);
     expect(client.auth.currentUser!.userMetadata!['saving_goal_amount'], 3000);
-    await tester.pump(const Duration(seconds: 5)); // Let the failed-save snackbar dismiss.
+    await tester.pump(
+      const Duration(seconds: 5),
+    ); // Let the failed-save snackbar dismiss.
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Update saving goal'));
     await tester.tap(find.text('Update saving goal'));

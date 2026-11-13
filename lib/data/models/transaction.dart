@@ -4,6 +4,7 @@ class TransactionEntry {
   final double amount;
   final DateTime date;
   final bool income;
+  final String? receiptPath, merchant;
   const TransactionEntry({
     required this.id,
     required this.description,
@@ -11,5 +12,7 @@ class TransactionEntry {
     required this.amount,
     required this.date,
     required this.income,
+    this.receiptPath,
+    this.merchant,
   });
 }

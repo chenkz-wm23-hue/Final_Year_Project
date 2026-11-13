@@ -20,10 +20,15 @@ class TransactionManagement {
     required DateTime date,
     required String category,
     required bool income,
+    String? receiptPath,
+    String? merchant,
   }) {
     if (description.trim().isEmpty || !amount.isFinite || amount <= 0) {
       throw ArgumentError('Enter a description and positive amount.');
     }
+    final previous = repository.transactions
+        .where((entry) => entry.id == id)
+        .firstOrNull;
     return repository.upsertTransaction(
       TransactionEntry(
         id: id ?? repository.nextTransactionId(),
@@ -32,6 +37,8 @@ class TransactionManagement {
         amount: amount,
         date: date,
         income: income,
+        receiptPath: receiptPath ?? previous?.receiptPath,
+        merchant: merchant ?? previous?.merchant,
       ),
     );
   }

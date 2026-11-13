@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'receipt_repository.dart';
 import 'expense_repository.dart';
 import '../models/transaction.dart';
 import '../models/user.dart';
@@ -5,7 +8,8 @@ import '../models/budget.dart';
 import '../models/category.dart';
 import '../models/keyword.dart';
 
-class InMemoryExpenseRepository implements ExpenseRepository {
+class InMemoryExpenseRepository
+    implements ExpenseRepository, ReceiptRepository {
   InMemoryExpenseRepository() {
     final now = DateTime.now();
     _transactions.addAll([
@@ -43,6 +47,25 @@ class InMemoryExpenseRepository implements ExpenseRepository {
       ),
     ]);
   }
+  final _receipts = <String, Uint8List>{};
+  @override
+  Future<String> uploadReceipt(String key, Uint8List png) async {
+    _receipts[key] = Uint8List.fromList(png);
+    return key;
+  }
+
+  @override
+  Future<Uint8List> downloadReceipt(String path) async {
+    final bytes = _receipts[path];
+    if (bytes == null) throw StateError('Receipt unavailable');
+    return Uint8List.fromList(bytes);
+  }
+
+  @override
+  Future<List<TransactionEntry>> receiptCandidates(
+    DateTime date,
+    double amount,
+  ) async => transactions;
   final _transactions = <TransactionEntry>[];
   final _budgets = <String, MonthlyBudget>{};
   var _nextId = 5;
@@ -56,7 +79,11 @@ class InMemoryExpenseRepository implements ExpenseRepository {
   int nextTransactionId() => _nextId++;
   @override
   void upsertTransaction(TransactionEntry entry) {
-    final i = _transactions.indexWhere((e) => e.id == entry.id);
+    final i = _transactions.indexWhere(
+      (e) =>
+          e.id == entry.id ||
+          (entry.receiptPath != null && e.receiptPath == entry.receiptPath),
+    );
     if (i < 0) {
       _transactions.add(entry);
     } else {

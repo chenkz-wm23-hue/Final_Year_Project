@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/expense_store.dart';
 import '../screens/transaction_form_screen.dart';
+import '../screens/receipt_viewer_screen.dart';
 import 'async_button.dart';
 
 class LiveTransactionTile extends StatelessWidget {
@@ -20,6 +21,7 @@ class LiveTransactionTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${entry.category} · ${dateLabel(entry.date)}'),
+          if (entry.receiptPath != null) const Text('Receipt attached'),
           Text(
             '${entry.income ? '+' : '-'}${money(entry.amount)}',
             style: TextStyle(
@@ -42,6 +44,15 @@ class LiveTransactionTile extends StatelessWidget {
           PopupMenuButton<String>(
             tooltip: 'Transaction actions',
             onSelected: (value) async {
+              if (value == 'receipt') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReceiptViewerScreen(entry: entry),
+                  ),
+                );
+                return;
+              }
               if (value == 'edit') {
                 Navigator.push(
                   context,
@@ -85,7 +96,12 @@ class LiveTransactionTile extends StatelessWidget {
                 }
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
+              if (entry.receiptPath != null)
+                const PopupMenuItem(
+                  value: 'receipt',
+                  child: Text('View receipt'),
+                ),
               PopupMenuItem(value: 'edit', child: Text('Edit')),
               PopupMenuItem(value: 'delete', child: Text('Delete')),
             ],
