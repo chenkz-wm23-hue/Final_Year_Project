@@ -9,6 +9,7 @@ class AccountSetupScreen extends StatefulWidget {
     required this.monthLabel,
     required this.onComplete,
     required this.onSignOut,
+    this.onSkip,
   });
   final String monthLabel;
   final Future<void> Function(
@@ -16,8 +17,10 @@ class AccountSetupScreen extends StatefulWidget {
     String budget,
     String? savingGoalName,
     String? savingGoalAmount,
-  ) onComplete;
+  )
+  onComplete;
   final Future<void> Function() onSignOut;
+  final Future<void> Function()? onSkip;
   @override
   State<AccountSetupScreen> createState() => _AccountSetupScreenState();
 }
@@ -29,6 +32,17 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   final savingGoalName = TextEditingController();
   final savingGoalAmount = TextEditingController();
   bool usingAutoAllocation = false;
+  bool submitting = false;
+  Future<void> submit(Future<void> Function() action) async {
+    if (submitting) return;
+    submitting = true;
+    try {
+      await action();
+    } finally {
+      submitting = false;
+    }
+  }
+
   @override
   void dispose() {
     income.dispose();
@@ -70,9 +84,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     if (shouldAllocate == true && mounted) {
       setState(() {
         usingAutoAllocation = true;
-        budget.text = AccountSetup.suggestedBudget(
-          incomeAmount,
-        ).toStringAsFixed(2);
+        budget.text = AccountSetup.suggestedBudget(incomeAmount)
+            .toStringAsFixed(2);
       });
     }
   }
@@ -228,17 +241,34 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                     label: 'Finish setup',
                     onPressed: () async {
                       if (form.currentState!.validate()) {
-                        await widget.onComplete(
-                          income.text,
-                          budget.text,
-                          usingAutoAllocation ? savingGoalName.text : null,
-                          usingAutoAllocation ? savingGoalAmount.text : null,
+                        await submit(
+                          () => widget.onComplete(
+                            income.text,
+                            budget.text,
+                            usingAutoAllocation ? savingGoalName.text : null,
+                            usingAutoAllocation ? savingGoalAmount.text : null,
+                          ),
                         );
                       }
                     },
                   ),
                   const SizedBox(height: 12),
-                  AsyncButton(label: 'Sign out', onPressed: widget.onSignOut),
+                  if (widget.onSkip != null) ...[
+                    AsyncButton(
+                      label: 'Skip for now',
+                      onPressed: () => submit(widget.onSkip!),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'You can add income and set a budget later. No amounts will be saved when you skip.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  AsyncButton(
+                    label: 'Sign out',
+                    onPressed: () => submit(widget.onSignOut),
+                  ),
                 ],
               ),
             ),

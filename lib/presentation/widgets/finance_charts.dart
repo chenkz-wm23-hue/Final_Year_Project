@@ -64,6 +64,11 @@ class BudgetChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ratio = budget > 0 ? spent / budget : 0.0;
+    if (budget <= 0) {
+      return Text(
+        'Spent · ${money(spent)}\nBudget usage will appear after you set a budget.',
+      );
+    }
     final over = spent > budget;
     final color = over
         ? Theme.of(context).colorScheme.error

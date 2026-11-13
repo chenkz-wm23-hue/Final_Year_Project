@@ -31,7 +31,7 @@ class RuleBasedRiskEvaluator {
       );
     }
     for (final e in s.categoryTotals.entries) {
-      if (e.value >= s.budget * .5) {
+      if (s.budget > 0 && e.value >= s.budget * .5) {
         result.add(
           RiskAlert(
             title: 'High spending in ${e.key}',

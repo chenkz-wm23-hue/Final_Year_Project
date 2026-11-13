@@ -140,12 +140,18 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Monthly budget · ${money(store.budget)}'),
+              Text(
+                store.budget > 0
+                    ? 'Monthly budget · ${money(store.budget)}'
+                    : 'Monthly budget · Not set',
+              ),
               const SizedBox(height: 12),
               BudgetChart(spent: store.expense, budget: store.budget),
               const SizedBox(height: 12),
               Text(
-                store.remaining < 0
+                store.budget <= 0
+                    ? 'Choose your spending limit on the Budget screen.'
+                    : store.remaining < 0
                     ? '${money(-store.remaining)} over budget'
                     : '${money(store.remaining)} budget remaining',
               ),

@@ -7,8 +7,26 @@ import 'budget_management.dart';
 class AccountSetup {
   const AccountSetup(this.client);
   final SupabaseClient client;
-  bool get required =>
-      client.auth.currentUser?.userMetadata?['onboarding_required'] == true;
+  bool get required {
+    final user = client.auth.currentUser;
+    if (user == null) return false;
+    final metadata = user.userMetadata;
+    // Missing flags are an unfinished setup, not permission to skip it.
+    return metadata?['onboarding_required'] == true ||
+        (metadata?['onboarding_completed'] != true &&
+            metadata?['onboarding_skipped'] != true);
+  }
+
+  Future<void> skip() async {
+    if (client.auth.currentUser == null) {
+      throw StateError('Please log in again');
+    }
+    await client.auth.updateUser(
+      UserAttributes(
+        data: {'onboarding_required': false, 'onboarding_skipped': true},
+      ),
+    );
+  }
 
   static String? validateMoney(String? input, {bool allowZero = false}) {
     final text = input?.trim() ?? '';
@@ -42,12 +60,10 @@ class AccountSetup {
     ExpenseRepository repository,
     DateTime month,
     String income,
-    String budget,
-    {
+    String budget, {
     String? savingGoalName,
     String? savingGoalAmount,
-  }
-  ) async {
+  }) async {
     if (validateMoney(income, allowZero: true) != null ||
         validateMoney(budget) != null) {
       throw ArgumentError('Invalid setup amounts');
@@ -72,6 +88,7 @@ class AccountSetup {
                 double.parse(income.trim()) - double.parse(budget.trim()),
           'onboarding_required': false,
           'onboarding_completed': true,
+          'onboarding_skipped': false,
         },
       ),
     );

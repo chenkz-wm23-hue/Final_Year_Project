@@ -38,7 +38,8 @@ void main() {
     await store.setBudget(800);
     store.changeMonth(1);
     expect(store.monthly, isEmpty);
-    expect(store.budget, 1500);
+    expect(store.budget, 0);
+    expect(store.ratio.isFinite, isTrue);
     await store.setBudget(2000);
     store.changeMonth(-1);
     expect(store.budget, 800);

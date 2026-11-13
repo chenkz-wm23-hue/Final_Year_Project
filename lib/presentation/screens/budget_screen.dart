@@ -41,7 +41,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   Future<void> editBudget(ExpenseStore store) async {
-    var amount = store.budget.toStringAsFixed(2);
+    var amount = store.budget > 0 ? store.budget.toStringAsFixed(2) : '';
     final form = GlobalKey<FormState>();
     await showDialog<void>(
       context: context,
@@ -111,7 +111,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
             children: [
               const Text('Monthly budget'),
               Text(
-                money(store.budget),
+                store.budget > 0 ? money(store.budget) : 'Budget not set',
                 style: const TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
@@ -126,7 +126,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () => editBudget(store),
-                  child: const Text('Update Budget'),
+                  child: Text(
+                    store.budget > 0 ? 'Update Budget' : 'Set Budget',
+                  ),
                 ),
               ),
             ],

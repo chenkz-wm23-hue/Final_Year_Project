@@ -11,7 +11,7 @@ class DashboardSummary {
   });
   double get balance => income - expense;
   double get remaining => budget - expense;
-  double get ratio => expense / budget;
+  double get ratio => budget > 0 ? expense / budget : 0;
 }
 
 class DashboardCalculation {

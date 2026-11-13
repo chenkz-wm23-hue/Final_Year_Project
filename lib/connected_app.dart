@@ -181,6 +181,12 @@ class _ConnectedAppState extends State<ConnectedApp>
                 return AccountSetupScreen(
                   monthLabel: activeStore.monthLabel,
                   onSignOut: auth.signOut,
+                  onSkip: () async {
+                    await AccountSetup(widget.client).skip();
+                    if (mounted && identical(store, activeStore)) {
+                      setState(() {});
+                    }
+                  },
                   onComplete:
                       (income, budget, savingGoalName, savingGoalAmount) async {
                         await AccountSetup(widget.client).complete(

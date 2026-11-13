@@ -494,6 +494,7 @@ void main() {
   testWidgets('auth events replace protected navigation on login and logout', (
     tester,
   ) async {
+    user['user_metadata'] = {'onboarding_completed': true};
     await tester.pumpWidget(ConnectedApp(client: client));
     expect(find.text('Get started'), findsOneWidget);
     await tester.runAsync(
@@ -523,6 +524,7 @@ void main() {
   testWidgets('saving goal closes safely and can be reopened and cancelled', (
     tester,
   ) async {
+    user['user_metadata'] = {'onboarding_completed': true};
     tester.view.physicalSize = const Size(800, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -612,6 +614,67 @@ void main() {
       await tester.runAsync(
         () => auth.signIn('student@example.com', 'password123'),
       );
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountSetupScreen), findsNothing);
+      expect(find.byType(AppShell), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets('skip setup saves no amounts and persists after relaunch', (
+    tester,
+  ) async {
+    await auth.signIn('student@example.com', 'password123');
+    await tester.pumpWidget(ConnectedApp(client: client));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, '3000');
+    await tester.ensureVisible(find.text('Skip for now'));
+    rejectMetadata = true;
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AccountSetupScreen), findsOneWidget);
+    expect(AccountSetup(client).required, isTrue);
+    rejectMetadata = false;
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppShell), findsOneWidget);
+    expect(budgets, isEmpty);
+    expect(rows, isEmpty);
+    expect(
+      client.auth.currentUser!.userMetadata!['expected_monthly_income'],
+      isNull,
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(ConnectedApp(client: client));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppShell), findsOneWidget);
+    expect(find.byType(AccountSetupScreen), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+    'missing setup flags open setup and survive relaunch until finished',
+    (tester) async {
+      await auth.signIn('student@example.com', 'password123');
+      await tester.pumpWidget(ConnectedApp(client: client));
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountSetupScreen), findsOneWidget);
+      expect(find.byType(AppShell), findsNothing);
+      expect(budgets, isEmpty);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(ConnectedApp(client: client));
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountSetupScreen), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField).at(0), '2500');
+      await tester.enterText(find.byType(TextFormField).at(1), '975');
+      await tester.ensureVisible(find.text('Finish setup'));
+      await tester.tap(find.text('Finish setup'));
+      await tester.pumpAndSettle();
+      expect(budgets.single['amount'], 975);
+      expect(find.byType(AppShell), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(ConnectedApp(client: client));
       await tester.pumpAndSettle();
       expect(find.byType(AccountSetupScreen), findsNothing);
       expect(find.byType(AppShell), findsOneWidget);
