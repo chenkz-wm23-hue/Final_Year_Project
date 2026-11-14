@@ -195,6 +195,7 @@ class _ReceiptScanScreenState extends State<ReceiptScanScreen> {
     setState(() => busy = true);
     try {
       final store = ExpenseScope.of(context);
+        store.transactions.requireIncome(date);
       final repo = store.repository;
       if (repo is! ReceiptRepository) {
         throw StateError('Receipt storage unavailable');

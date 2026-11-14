@@ -2,10 +2,24 @@ import 'dart:async';
 
 import '../data/repositories/expense_repository.dart';
 import '../data/models/transaction.dart';
+import 'expense_validation.dart';
 
 class TransactionManagement {
   final ExpenseRepository repository;
   const TransactionManagement(this.repository);
+  void requireIncome(DateTime date, {int? excludingId}) {
+    if (!repository.transactions.any(
+      (entry) =>
+          entry.id != excludingId &&
+          entry.income &&
+          entry.amount > 0 &&
+          entry.date.year == date.year &&
+          entry.date.month == date.month,
+    )) {
+      throw const ExpenseValidationException();
+    }
+  }
+
   List<TransactionEntry> forMonth(DateTime month) =>
       repository.transactions
           .where(
@@ -26,6 +40,7 @@ class TransactionManagement {
     if (description.trim().isEmpty || !amount.isFinite || amount <= 0) {
       throw ArgumentError('Enter a description and positive amount.');
     }
+    if (!income) requireIncome(date, excludingId: id);
     final previous = repository.transactions
         .where((entry) => entry.id == id)
         .firstOrNull;

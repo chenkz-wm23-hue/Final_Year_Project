@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'receipt_repository.dart';
+import 'setup_income_repository.dart';
 import 'saving_repository.dart';
 import '../models/saving_plan.dart';
 
@@ -22,10 +23,26 @@ class SupabaseExpenseRepository
         ExpenseRepository,
         InsightRepository,
         ReceiptRepository,
-        SavingRepository {
+        SavingRepository,
+        SetupIncomeRepository {
   SupabaseExpenseRepository(this.client, this.userId);
   final SupabaseClient client;
   final String userId;
+  @override
+  Future<void> recordSetupIncome(double amount, DateTime month) async {
+    _checkSession();
+    await client
+        .rpc(
+          'record_setup_income',
+          params: {
+            'p_amount': amount,
+            'p_month': _date(DateTime(month.year, month.month)),
+          },
+        )
+        .timeout(const Duration(seconds: 20));
+    await load();
+  }
+
   @override
   SavingPlan? savingPlan;
 

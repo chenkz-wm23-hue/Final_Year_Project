@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/repositories/expense_repository.dart';
 import '../data/repositories/saving_repository.dart';
+import '../data/repositories/setup_income_repository.dart';
 import 'budget_management.dart';
 
 /// Preferences only: metadata is never used as an authorization decision.
@@ -73,6 +74,12 @@ class AccountSetup {
     if (user == null) throw StateError('Please log in again');
     // Upsert is safe to retry if the metadata request subsequently fails.
     await BudgetManagement(repository).save(month, double.parse(budget.trim()));
+    if (repository is SetupIncomeRepository) {
+      await (repository as SetupIncomeRepository).recordSetupIncome(
+        double.parse(income.trim()),
+        month,
+      );
+    }
     if (client.auth.currentUser?.id != user.id) {
       throw StateError('Account changed');
     }

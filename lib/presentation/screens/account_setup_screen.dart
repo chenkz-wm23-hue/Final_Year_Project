@@ -56,9 +56,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final incomeAmount = double.tryParse(income.text.trim());
     if (incomeAmount == null || incomeAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter your expected monthly income first.'),
-        ),
+        const SnackBar(content: Text('Enter your monthly income first.')),
       );
       return;
     }
@@ -112,7 +110,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Tell us your expected monthly income and choose a spending limit. You can enter 0 if you have no regular income.',
+                    'Enter your monthly salary and choose a spending limit. You can enter 0 if you have no income yet.',
                   ),
                   const SizedBox(height: 24),
                   TextFormField(
@@ -121,7 +119,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                       decimal: true,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'Expected monthly income',
+                      labelText: 'Monthly salary received',
                       prefixText: 'RM ',
                       border: OutlineInputBorder(),
                       errorMaxLines: 3,
@@ -136,7 +134,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'This is a planning estimate, not an income transaction. Record money received on the Income screen.',
+                    'This will be saved as Salary income for this month and shown on your dashboard. Salary repeats each new month. Enter 0 to add income later.',
                   ),
                   const SizedBox(height: 24),
                   Wrap(

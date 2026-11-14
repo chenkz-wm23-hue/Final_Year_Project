@@ -18,6 +18,13 @@ void main() {
       }
       await store.setBudget(1500);
       await store.save(
+        description: 'Allowance',
+        amount: 300,
+        date: DateTime.now(),
+        category: 'Allowance',
+        income: true,
+      );
+      await store.save(
         description: 'Toys',
         amount: 300,
         date: DateTime.now(),
@@ -30,25 +37,22 @@ void main() {
           home: const Scaffold(body: DashboardScreen()),
         ),
       );
-      expect(store.balance, -300);
+      expect(store.balance, 0);
       expect(store.remaining, 1200);
       expect(find.text('RM 1200.00 budget remaining'), findsOneWidget);
       expect(find.text('Your spending is within budget.'), findsOneWidget);
-      expect(
-        find.textContaining('No received income recorded'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('No received income recorded'), findsNothing);
       await tester.tap(find.text('Add Income'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField).at(0), 'Test salary');
       await tester.enterText(find.byType(TextFormField).at(1), '2000');
       await tester.tap(find.text('Save Income'));
       await tester.pumpAndSettle();
-      expect(store.balance, 1700);
+      expect(store.balance, 2000);
       expect(store.remaining, 1200);
       expect(
         tester.widget<CashFlowChart>(find.byType(CashFlowChart)).income,
-        2000,
+        2300,
       );
       await tester.tap(find.text('Manage Income'));
       await tester.pumpAndSettle();
@@ -58,12 +62,12 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(1), '2500');
       await tester.tap(find.text('Save Income'));
       await tester.pumpAndSettle();
-      expect(store.income, 2500);
+      expect(store.income, 2800);
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(
         tester.widget<CashFlowChart>(find.byType(CashFlowChart)).income,
-        2500,
+        2800,
       );
       store.changeMonth(1);
       await tester.pumpAndSettle();

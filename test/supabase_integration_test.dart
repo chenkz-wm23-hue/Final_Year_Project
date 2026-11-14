@@ -97,6 +97,25 @@ void main() {
       httpClient: MockClient((request) async {
         requests.add(request);
         final path = request.url.path;
+        if (path.endsWith('/rpc/record_setup_income')) {
+          if (rejectWrites) return response({'message': 'Denied'}, 403);
+          final data = jsonDecode(request.body);
+          if ((data['p_amount'] as num) > 0) {
+            rows.putIfAbsent(
+              99,
+              () => {
+                'id': 99,
+                'user_id': uid,
+                'description': 'Monthly salary (account setup)',
+                'amount': data['p_amount'],
+                'transaction_date': data['p_month'],
+                'transaction_type': 'income',
+                'category_id': 2,
+              },
+            );
+          }
+          return http.Response('', 204, request: request);
+        }
         if (path.endsWith('/rpc/refresh_monthly_salary') ||
             path.endsWith('/rpc/refresh_saving_goal')) {
           return http.Response('', 204, request: request);
@@ -171,6 +190,7 @@ void main() {
             'risk_alerts' => savedAlerts,
             'categories' => [
               {'id': 1, 'name': 'Food', 'transaction_type': 'expense'},
+              {'id': 2, 'name': 'Salary', 'transaction_type': 'income'},
             ],
             'keywords' => [
               {'id': 1, 'keyword': 'lunch', 'category_id': 1},
@@ -226,6 +246,7 @@ void main() {
       await auth.signIn('student@example.com', 'password123');
       final repo = SupabaseExpenseRepository(client, uid);
       await repo.load();
+      await repo.recordSetupIncome(2000, DateTime(2026, 11));
       final store = ExpenseStore(repository: repo);
       final path = '$uid/receipt-test.png';
       await store.save(
@@ -248,9 +269,9 @@ void main() {
         'user_id,receipt_path',
       );
       await repo.load();
-      expect(store.entries.single.receiptPath, path);
+      expect(store.entries.where((e) => !e.income).single.receiptPath, path);
       await store.save(
-        id: store.entries.single.id,
+        id: store.entries.where((e) => !e.income).single.id,
         description: 'Edited',
         amount: 16,
         date: DateTime(2026, 11, 13),
@@ -258,8 +279,8 @@ void main() {
         income: false,
       );
       await repo.load();
-      expect(store.entries.single.receiptPath, path);
-      expect(store.entries.single.merchant, 'KFC');
+      expect(store.entries.where((e) => !e.income).single.receiptPath, path);
+      expect(store.entries.where((e) => !e.income).single.merchant, 'KFC');
       store.dispose();
     },
   );
@@ -636,10 +657,8 @@ void main() {
         client.auth.currentUser!.userMetadata!['expected_monthly_income'],
         2000,
       );
-      expect(
-        rows,
-        isEmpty,
-      ); // Expected income is not fabricated received money.
+      expect(rows.values.single['amount'], 2000);
+      expect(rows.values.single['transaction_type'], 'income');
       await tester.runAsync(auth.signOut);
       await tester.pumpAndSettle();
       await tester.runAsync(
@@ -666,6 +685,9 @@ void main() {
     expect(find.byType(AccountSetupScreen), findsOneWidget);
     expect(AccountSetup(client).required, isTrue);
     rejectMetadata = false;
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Skip for now'));
     await tester.tap(find.text('Skip for now'));
     await tester.pumpAndSettle();
     expect(find.byType(AppShell), findsOneWidget);
@@ -736,6 +758,10 @@ void main() {
     await auth.signIn('student@example.com', 'password123');
     final repo = SupabaseExpenseRepository(client, uid);
     await repo.load();
+    await repo.recordSetupIncome(
+      1000,
+      DateTime(DateTime.now().year, DateTime.now().month),
+    );
     final store = ExpenseStore(repository: repo);
     addTearDown(store.dispose);
     await store.setBudget(1500);
@@ -749,8 +775,8 @@ void main() {
     await store.saveSavingGoal('Laptop', 3000, 300);
     expect(store.monthlySavings, 300);
     expect(store.expense, 20);
-    expect(store.balance, -20);
-    expect(store.availableAfterSavings, -320);
+    expect(store.balance, 980);
+    expect(store.availableAfterSavings, 680);
     expect(store.remaining, 1480);
     expect(store.savingPlan!.monthsRemaining, 9);
     final reload = SupabaseExpenseRepository(client, uid);

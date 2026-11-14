@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../business_logic/expense_validation.dart';
+
 String friendlyError(Object error) {
+  if (error is ExpenseValidationException) {
+    return ExpenseValidationException.message;
+  }
   if (error is AuthException) return error.message;
   if (error is PostgrestException) {
+    if (error.code == 'P0001' &&
+        error.message == ExpenseValidationException.message) {
+      return error.message;
+    }
     return 'Could not save your data. Please check your connection and try again.';
   }
   return 'Unable to complete the request. Check your connection and try again.';
