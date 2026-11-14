@@ -69,6 +69,18 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
+                if (store.savingPlan != null) ...[
+                  Text('Reserved for goal · ${money(store.monthlySavings)}'),
+                  Text(
+                    'Available after savings · ${money(store.availableAfterSavings)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (store.availableAfterSavings < 0)
+                    const Text(
+                      'Recorded income does not cover expenses and planned savings.',
+                    ),
+                  const SizedBox(height: 8),
+                ],
                 const Text(
                   'Income minus expenses. Your budget is a spending limit, not income.',
                 ),

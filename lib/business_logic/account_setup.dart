@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/repositories/expense_repository.dart';
+import '../data/repositories/saving_repository.dart';
 import 'budget_management.dart';
 
 /// Preferences only: metadata is never used as an authorization decision.
@@ -74,6 +75,23 @@ class AccountSetup {
     await BudgetManagement(repository).save(month, double.parse(budget.trim()));
     if (client.auth.currentUser?.id != user.id) {
       throw StateError('Account changed');
+    }
+    if (savingGoalName != null &&
+        savingGoalName.trim().isNotEmpty &&
+        savingGoalAmount != null &&
+        savingGoalAmount.trim().isNotEmpty &&
+        repository is SavingRepository) {
+      final monthly = double.parse(income.trim()) - double.parse(budget.trim());
+      if (validateMoney(savingGoalAmount) != null || monthly <= 0) {
+        throw ArgumentError(
+          'Enter a positive goal and leave room for monthly savings',
+        );
+      }
+      await (repository as SavingRepository).saveSavingGoal(
+        savingGoalName.trim(),
+        double.parse(savingGoalAmount),
+        monthly,
+      );
     }
     await client.auth.updateUser(
       UserAttributes(

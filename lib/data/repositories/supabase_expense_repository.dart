@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'receipt_repository.dart';
+import 'saving_repository.dart';
+import '../models/saving_plan.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,10 +18,64 @@ import '../models/keyword.dart';
 
 /// One repository per authenticated account. Cache changes only after server success.
 class SupabaseExpenseRepository
-    implements ExpenseRepository, InsightRepository, ReceiptRepository {
+    implements
+        ExpenseRepository,
+        InsightRepository,
+        ReceiptRepository,
+        SavingRepository {
   SupabaseExpenseRepository(this.client, this.userId);
   final SupabaseClient client;
   final String userId;
+  @override
+  SavingPlan? savingPlan;
+
+  @override
+  Future<void> refreshSavings() async {
+    _checkSession();
+    await client
+        .rpc('refresh_saving_goal')
+        .timeout(const Duration(seconds: 20));
+    final goal = await client
+        .from('saving_goals')
+        .select()
+        .eq('user_id', userId)
+        .maybeSingle();
+    final allocations = await client
+        .from('saving_allocations')
+        .select()
+        .eq('user_id', userId)
+        .order('month');
+    _checkSession();
+    savingPlan = goal == null
+        ? null
+        : SavingPlan(
+            name: goal['name'] as String,
+            target: (goal['target'] as num).toDouble(),
+            monthlyAmount: (goal['monthly_amount'] as num).toDouble(),
+            allocations: {
+              for (final row in allocations)
+                DateTime.parse(row['month'] as String): (row['amount'] as num)
+                    .toDouble(),
+            },
+          );
+  }
+
+  @override
+  Future<void> saveSavingGoal(
+    String name,
+    double target,
+    double monthly,
+  ) async {
+    _checkSession();
+    await client
+        .rpc(
+          'save_saving_goal',
+          params: {'p_name': name, 'p_target': target, 'p_monthly': monthly},
+        )
+        .timeout(const Duration(seconds: 20));
+    await refreshSavings();
+  }
+
   static const receiptBucket = 'expense-receipts';
   @override
   Future<String> uploadReceipt(String key, Uint8List png) async {
@@ -156,6 +212,7 @@ class SupabaseExpenseRepository
     _checkSession();
     // The server chooses the actual calendar month and deduplicates retries.
     await client.rpc('refresh_monthly_salary');
+    await refreshSavings();
     _checkSession();
     final categories = await _readAll('categories');
     final keywords = await _readAll('keywords');

@@ -43,6 +43,8 @@ void main() {
   late Map<int, Map<String, dynamic>> rows;
   late Map<String, dynamic> profile;
   late List<Map<String, dynamic>> budgets;
+  Map<String, dynamic>? savingGoal;
+  List<Map<String, dynamic>> savingAllocations = [];
   bool rejectWrites = false;
   bool rejectLogin = false;
   String loginFailureCode = 'invalid_credentials';
@@ -73,6 +75,8 @@ void main() {
     requests = [];
     rows = {};
     budgets = [];
+    savingGoal = null;
+    savingAllocations = [];
     profile = {'id': uid, 'full_name': 'Student', 'phone': '', 'address': ''};
     rejectWrites = false;
     rejectLogin = false;
@@ -93,7 +97,27 @@ void main() {
       httpClient: MockClient((request) async {
         requests.add(request);
         final path = request.url.path;
-        if (path.endsWith('/rpc/refresh_monthly_salary')) {
+        if (path.endsWith('/rpc/refresh_monthly_salary') ||
+            path.endsWith('/rpc/refresh_saving_goal')) {
+          return http.Response('', 204, request: request);
+        }
+        if (path.endsWith('/rpc/save_saving_goal')) {
+          if (rejectMetadata || rejectWrites) {
+            return response({'message': 'Unable to save goal'}, 400);
+          }
+          final data = jsonDecode(request.body);
+          savingGoal = {
+            'name': data['p_name'],
+            'target': data['p_target'],
+            'monthly_amount': data['p_monthly'],
+          };
+          final now = DateTime.now().toUtc().add(const Duration(hours: 8));
+          savingAllocations = [
+            {
+              'month': '${now.year}-${now.month.toString().padLeft(2, '0')}-01',
+              'amount': data['p_monthly'],
+            },
+          ];
           return http.Response('', 204, request: request);
         }
         if (path.endsWith('/signup')) {
@@ -154,6 +178,8 @@ void main() {
             'profiles' => profile,
             'transactions' => rows.values.toList(),
             'budgets' => budgets,
+            'saving_goals' => savingGoal == null ? [] : [savingGoal],
+            'saving_allocations' => savingAllocations,
             _ => throw StateError('Unexpected request: $path'),
           });
         }
@@ -543,14 +569,19 @@ void main() {
     await tester.tap(find.text('Save goal'));
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.text('Unable to save setup'), findsOneWidget);
+    expect(
+      find.text(
+        'Could not save your data. Please check your connection and try again.',
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
     rejectMetadata = false;
     await tester.tap(find.text('Save goal'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('Laptop'), findsOneWidget);
-    expect(client.auth.currentUser!.userMetadata!['saving_goal_amount'], 3000);
+    expect(savingGoal!['target'], 3000);
     await tester.pump(
       const Duration(seconds: 5),
     ); // Let the failed-save snackbar dismiss.
@@ -699,6 +730,37 @@ void main() {
     await setup.complete(repo, DateTime(2026, 10), '0', '700');
     expect(setup.required, isFalse);
     expect(budgets, hasLength(1));
+  });
+
+  test('saving allocations reload and reduce available money without changing expenses', () async {
+    await auth.signIn('student@example.com', 'password123');
+    final repo = SupabaseExpenseRepository(client, uid);
+    await repo.load();
+    final store = ExpenseStore(repository: repo);
+    addTearDown(store.dispose);
+    await store.setBudget(1500);
+    await store.save(
+      description: 'Lunch',
+      amount: 20,
+      date: store.month,
+      category: 'Food',
+      income: false,
+    );
+    await store.saveSavingGoal('Laptop', 3000, 300);
+    expect(store.monthlySavings, 300);
+    expect(store.expense, 20);
+    expect(store.balance, -20);
+    expect(store.availableAfterSavings, -320);
+    expect(store.remaining, 1480);
+    expect(store.savingPlan!.monthsRemaining, 9);
+    final reload = SupabaseExpenseRepository(client, uid);
+    await reload.load();
+    expect(reload.savingPlan!.allocated, 300);
+    await store.saveSavingGoal('Laptop', 3000, 400);
+    expect(store.monthlySavings, 400);
+    expect(store.savingPlan!.allocated, 400);
+    store.changeMonth(-1);
+    expect(store.monthlySavings, 0);
   });
 
   test('setup validates monetary precision and limits', () {

@@ -79,6 +79,7 @@ class _SavingGoalDialogState extends State<SavingGoalDialog> {
             ],
             TextFormField(
               controller: goalName,
+              maxLength: 150,
               decoration: const InputDecoration(
                 labelText: 'Saving goal',
                 hintText: 'e.g. New laptop',
@@ -112,10 +113,14 @@ class _SavingGoalDialogState extends State<SavingGoalDialog> {
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
+            const Text(
+              'Reserve this amount each month, starting this month. It reduces available money, not recorded income or expenses. Monthly allocations refresh when you open the app, including missed months. Editing updates this month’s allocation; earlier months stay unchanged.',
+            ),
+            const SizedBox(height: 12),
             Text(
               months == null
                   ? 'Enter positive amounts to calculate your timeline.'
-                  : 'You can reach this goal in about $months ${months == 1 ? 'month' : 'months'}.',
+                  : 'From zero, this plan takes $months monthly ${months == 1 ? 'allocation' : 'allocations'}. Progress is shown after saving.',
             ),
           ],
         ),

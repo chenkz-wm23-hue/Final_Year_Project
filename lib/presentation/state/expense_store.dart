@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../data/repositories/expense_repository.dart';
+import '../../data/repositories/saving_repository.dart';
+import '../../data/models/saving_plan.dart';
 import '../../data/repositories/insight_repository.dart';
 import '../../data/repositories/in_memory_expense_repository.dart';
 import '../../data/models/transaction.dart';
@@ -74,6 +76,28 @@ class ExpenseStore extends ChangeNotifier {
   double get income => summary.income;
   double get expense => summary.expense;
   double get balance => summary.balance;
+  SavingPlan? get savingPlan => repository is SavingRepository
+      ? (repository as SavingRepository).savingPlan
+      : null;
+  double get monthlySavings => savingPlan?.forMonth(month) ?? 0;
+  double get availableAfterSavings => balance - monthlySavings;
+  Future<void> saveSavingGoal(
+    String name,
+    double target,
+    double monthly,
+  ) async {
+    if (repository is! SavingRepository) {
+      throw StateError('Savings unavailable');
+    }
+    await (repository as SavingRepository).saveSavingGoal(
+      name,
+      target,
+      monthly,
+    );
+    dataRevision++;
+    notifyListeners();
+  }
+
   double get budget => budgets.amountFor(month);
   double get remaining => summary.remaining;
   double get ratio => summary.ratio;

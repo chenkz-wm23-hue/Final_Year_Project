@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../business_logic/account_setup.dart';
 import '../state/expense_store.dart';
@@ -23,17 +22,21 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final client = AuthScope.maybeOf(context)?.client;
     final user = client?.auth.currentUser;
     if (client == null || user == null) return;
-    final metadata = user.userMetadata ?? const <String, dynamic>{};
+    final metadata = {...?user.userMetadata, ...?store.savingPlan?.metadata};
     final expectedIncome =
         (metadata['expected_monthly_income'] as num?)?.toDouble() ?? 0;
     final saved = await showDialog<bool>(
       context: context,
       builder: (_) => SavingGoalDialog(
         metadata: metadata,
-        expectedIncome: expectedIncome,
+        expectedIncome: expectedIncome > 0 ? expectedIncome : store.income,
         budget: store.budget,
         onSave: (data) async {
-          await client.auth.updateUser(UserAttributes(data: data));
+          await store.saveSavingGoal(
+            data['saving_goal_name'] as String,
+            data['saving_goal_amount'] as double,
+            data['monthly_saving_amount'] as double,
+          );
         },
       ),
     );
@@ -85,14 +88,15 @@ class _BudgetScreenState extends State<BudgetScreen> {
   @override
   Widget build(BuildContext context) {
     final store = ExpenseScope.of(context);
-    final metadata = AuthScope.maybeOf(context)
+    final legacyMetadata = AuthScope.maybeOf(context)
         ?.client
         .auth
         .currentUser
         ?.userMetadata;
-    final goalName = metadata?['saving_goal_name'] as String?;
-    final goalAmount = (metadata?['saving_goal_amount'] as num?)?.toDouble();
-    final monthlySaving = (metadata?['monthly_saving_amount'] as num?)
+    final metadata = {...?legacyMetadata, ...?store.savingPlan?.metadata};
+    final goalName = metadata['saving_goal_name'] as String?;
+    final goalAmount = (metadata['saving_goal_amount'] as num?)?.toDouble();
+    final monthlySaving = (metadata['monthly_saving_amount'] as num?)
         ?.toDouble();
     final months = goalAmount == null || monthlySaving == null
         ? null
@@ -151,12 +155,38 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 ),
                 Text('Goal: ${money(goalAmount)}'),
                 Text('Planned savings: ${money(monthlySaving)} per month'),
+                if (store.savingPlan case final plan?) ...[
+                  Text(
+                    'Allocated to goal: ${money(plan.allocated)} / ${money(plan.target)}',
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: (plan.allocated / plan.target).clamp(0, 1),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Reserved this month: ${money(store.monthlySavings)}'),
+                  Text(
+                    'Available after savings: ${money(store.availableAfterSavings)}',
+                  ),
+                  Text(
+                    plan.remaining == 0
+                        ? 'Your planned savings have reached the goal.'
+                        : '${plan.monthsRemaining} more monthly allocations to reach your goal.',
+                  ),
+                  const Text(
+                    'Savings are reserved in this app; no money is transferred from your bank.',
+                  ),
+                ] else
+                  const Text(
+                    'Update this goal to start monthly savings allocations.',
+                  ),
                 const SizedBox(height: 8),
-                Text(
-                  months == null
-                      ? 'Set aside money each month to estimate your timeline.'
-                      : 'At this rate, you can reach your goal in about $months ${months == 1 ? 'month' : 'months'}.',
-                ),
+                if (store.savingPlan == null)
+                  Text(
+                    months == null
+                        ? 'Set aside money each month to estimate your timeline.'
+                        : 'At this rate, you can reach your goal in about $months ${months == 1 ? 'month' : 'months'}.',
+                  ),
               ],
             ),
           ),
